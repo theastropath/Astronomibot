@@ -5,13 +5,15 @@ from urllib.request import urlopen
 from datetime import datetime
 import os
 import sys
+import imp
 
 twitchIrcServer = "irc.twitch.tv"
 twitchIrcPort = 6667
 credFile = "creds.txt"
 channel = "#theastropath" #Channel name has to be all lowercase
-cmdFile = "cmds.txt"
 logDir = "logs"
+commandsDir = "commands"
+featuresDir = "features"
 
 nick=""
 passw=""
@@ -29,30 +31,51 @@ replaceTerm="$REPLACE"
 
 running = True
 
-customCmds = {} #Dictionary of all custom commands implemented on this bot
 modList = [] #List of all moderators for the channel
+commands = []
+features = []
 
-class CustomCommand:
-    command = ""
-    response = ""
-    userlevel = EVERYONE
+#############################################################################################################
+# These two classes define the API for interacting with "commands" and "features"
+# Implementations of these classes must be made in an individual .py file in the command
+# or feature folder, and the implemented class must have the same name as the file
+#############################################################################################################
 
-    def __init__(self,command,response,userlevel=EVERYONE):
-        self.command = command
-        self.response = response
-        self.userlevel=userlevel
+class Command:
+    name = ""
+    
+    #This function will take a msg and respond if this "command" should respond (True or False)
+    def shouldRespond(self, msg, userLevel):
+        raise NotImplementedError()
 
-    def canUseCommand(self,userlevel):
-        return userlevel>=self.userlevel
+    #This function will actually respond to the message
+    def respond(self,msg,sock):
+        raise NotImplementedError()
 
-    def getResponse(self,msg):
-        afterCmd = " ".join(msg.msg.split()[1:]).rstrip()
-        if len(afterCmd)>0 and afterCmd[0]=="/":
-            afterCmd = ""
-        return self.response.replace(replaceTerm,afterCmd)
+    #Equals is used for checking if the name is in the command list
+    def __eq__(self,key):
+        return key == self.name
 
-    def exportCommand(self):
-        return self.command+" "+str(self.userlevel)+" "+self.response+'\n'
+    def __init__(self,name):
+        self.name = name
+
+class Feature:
+    name = ""
+
+    #This function will go off and do whatever this feature is supposed to do
+    def handleFeature(self,sock):
+        raise NotImplementedError()
+
+    #Equals is used for checking if the name is in the feature list
+    def __eq__(self,key):
+        return key == self.name
+    
+    def __init__(self,name):
+        self.name = name
+
+
+###############################################################################################################    
+
 
 class IrcMessage:
     sender = ""
@@ -88,25 +111,6 @@ class IrcMessage:
         if (len(self.msg)==0):
             self.messageType = "INVALID"
 
-def exportCommands():
-    commands = channel[1:]+cmdFile
-    f = open(commands,mode='w',encoding="utf-8")
-    for cmd in customCmds.keys():
-        f.write(customCmds[cmd].exportCommand())
-    f.close()
-    
-def importCommands():
-    commands = channel[1:]+cmdFile
-    try:
-        f = open(commands,encoding="utf-8")
-        for line in f:
-            command = line.split()[0].lower()
-            userLvl = int(line.split()[1])
-            response = " ".join(line.split()[2:]).rstrip()
-            customCmds[command]=CustomCommand(command,response,userLvl)
-        f.close()
-    except FileNotFoundError:
-        print (commands+" is not present, no commands imported")
 
 def getModList(channelName):
     #Web method, will keep as a backup, but not used for now
@@ -125,159 +129,6 @@ def getUserLevel(userName):
     else:
         #print(userName+" identified as a scrub!")
         return EVERYONE
-
-def addCustomCommand(command):
-    newCmd = command.split()[0]
-    userLevel=EVERYONE
-
-    if newCmd[0]=="!":
-        cmdResp = " ".join(command.split()[1:])
-        userLevel=EVERYONE
-    else:
-        if newCmd == "BROADCASTER":
-            newCmd = command.split()[1]
-            cmdResp = " ".join(command.split()[2:])
-            userLevel=BROADCASTER
-        elif newCmd == "MOD":
-            newCmd = command.split()[1]
-            cmdResp = " ".join(command.split()[2:])
-            userLevel=MOD
-        elif newCmd == "EVERYONE":
-            newCmd = command.split()[1]
-            cmdResp = " ".join(command.split()[2:])
-            userLevel=EVERYONE
-        else:
-            return "Invalid user level for command!"
-
-    if cmdResp[0]=="/" or cmdResp[0]==".":
-        return "Tut tut, don't try that!"
-
-    newCmd = newCmd.lower()
-
-    if newCmd in customCmds.keys():
-        return "Command '"+newCmd+"' already exists!"
-    elif len(newCmd)==1:
-        return "No command name given!"
-    else:
-        customCmds[newCmd]=CustomCommand(newCmd,cmdResp,userLevel)
-        exportCommands()
-        return "Adding "+newCmd+" which will respond with '"+cmdResp+"'"
-
-def editCustomCommand(command):
-    newCmd = command.split()[0]
-    userLevelChanged = False
-    userLevel=EVERYONE
-
-    if newCmd[0]=="!":
-        cmdResp = " ".join(command.split()[1:])
-        userLevel=EVERYONE
-    else:
-        userLevelChanged = True
-        if newCmd == "BROADCASTER":
-            newCmd = command.split()[1]
-            cmdResp = " ".join(command.split()[2:])
-            userLevel=BROADCASTER
-        elif newCmd == "MOD":
-            newCmd = command.split()[1]
-            cmdResp = " ".join(command.split()[2:])
-            userLevel=MOD
-        elif newCmd == "EVERYONE":
-            newCmd = command.split()[1]
-            cmdResp = " ".join(command.split()[2:])
-            userLevel=EVERYONE
-        else:
-            return "Invalid user level for command!"
-
-    if cmdResp[0]=="/" or cmdResp[0]==".":
-        return "Tut tut, don't try that!"
-
-    newCmd = newCmd.lower()
-
-    if newCmd in customCmds.keys():
-        customCmds[newCmd].response = cmdResp
-        if userLevelChanged:
-            customCmds[newCmd].userlevel = userLevel
-        exportCommands()
-        return "Editing "+newCmd+" which will now respond with '"+cmdResp+"'"    
-    elif len(newCmd)==1:
-        return "No command name given!"
-    else:
-        return "Command '"+newCmd+"' doesn't exist!"
-
-def delCustomCommand(command):
-    cmd = command.split()[0]
-
-    if cmd[0]=="!":
-        if cmd in customCmds.keys():
-            del customCmds[cmd]
-            exportCommands()
-            return "Command "+cmd+" has been deleted"
-        else:
-            return "Command "+cmd+" is not present"
-            
-    else:
-        return  "No command name given!"
-
-def shouldWeRespondToThis(msg,userlevel):
-    #For now, we'll only respond to messages starting with !
-    if len(msg.msg)== 0:
-        return False
-    
-    if msg.msg[0] == '!':
-        command = msg.msg.split()[0].lower() #Only care about the first word
-        #Only a few hardcoded commands, then user editable commands
-        if command == "!addcom" or command == "!editcom" or command == "!delcom":
-            if userlevel>=EVERYONE:
-                return True
-        elif command == "!stop":
-            if userlevel==BROADCASTER:
-                return True
-        elif command == "!list":
-            return True
-        else:
-            if command in customCmds.keys():
-                if customCmds[command].canUseCommand(userlevel):
-                    return True
-        
-    else:
-        return False
-
-def respondToThis(msg, sock):
-    command = msg.msg.split()[0].lower()
-    response = ":"
-    if command == "!addcom":
-        newCmd = " ".join(msg.msg.split()[1:])
-        response = addCustomCommand(newCmd)
-        response = "PRIVMSG "+channel+" :"+response+"\n"
-        sock.sendall(response.encode('utf-8'))
-    elif command == "!editcom":
-        newCmd = " ".join(msg.msg.split()[1:])
-        response = editCustomCommand(newCmd)
-        response = "PRIVMSG "+channel+" :"+response+"\n"
-        sock.sendall(response.encode('utf-8'))
-    elif command == "!delcom":
-        newCmd = " ".join(msg.msg.split()[1:])
-        response = delCustomCommand(newCmd)
-        response = "PRIVMSG "+channel+" :"+response+"\n"
-        sock.sendall(response.encode('utf-8'))
-    elif command == "!stop":
-        print ("Stopping it!")
-        running = False
-    elif command == "!list":
-        response = ", ".join(customCmds.keys())
-        response = "PRIVMSG "+channel+" :"+response+"\n"
-        sock.sendall(response.encode('utf-8'))
-
-    else:
-        if customCmds[command]:
-            response = customCmds[command].getResponse(msg)
-            response = "PRIVMSG "+channel+" :"+response+"\n"
-            sock.sendall(response.encode('utf-8'))
-
-    #Now strip the IRC formatting off again so that we can log the response
-    response = ":".join(response.split(":")[1:])
-    response = response[:-1]
-    return response
 
 def handleNoticeMessage(msg):
     if "The moderators of this room are:" in msg.msg:
@@ -322,62 +173,102 @@ def connectToServer():
 
     return sock
 
+def checkCommandsAndFeatures():
+    commandFiles = []
+    for command in os.listdir(commandsDir):
+        commandName = command[:-3]
+        if ".py" in command[-3:] and commandName not in commands:
+            commandFiles.append(commandName)
 
-#Use channel name provided (IF one was provided)
-if len(sys.argv)>1:
-    channel = sys.argv[1].lower()
-    if channel[0]!='#':
-        channel = '#'+channel
-    print ("Connecting to provided channel '"+channel+"'")
-else:
-    print ("Connecting to default channel '"+channel+"'")
+    featureFiles = []  
+    for feature in os.listdir(featuresDir):
+        featureName = feature[:-3]
+        if ".py" in feature[-3:] and featureName not in features:
+            featureFiles.append(featureName)
 
-#Read credentials out of cred file
-try:
-    f = open(credFile)
-    nick = f.readline().strip('\n')
-    passw = f.readline().strip('\n')
-    f.close()
-except FileNotFoundError:
-    print(credFile+" is missing!  Please create this file in your working directory.  First line should be the username for the bot, second line should be the oauth password for it!")
-    exit(1)
-importCommands()
+    for command in commandFiles:
 
-sock = connectToServer()
+        #Load file, and get the corresponding class in it, then instantiate it
+        c = imp.load_source('Command',commandsDir+os.sep+command+".py")
+        cmd = getattr(c,command)
+        
+        commands.append(cmd(command))
+        print("Loading command module '"+command+"'")
+        
+    for feature in featureFiles:
+        #Load file, and get the corresponding class in it, then instantiate it
+        f = imp.load_source('Feature',featuresDir+os.sep+feature+".py")
+        feat = getattr(f,feature)
+        
+        features.append(feat(feature))
+        print("Loading feature module '"+feature+"'")
 
-while(running):
-    message = ""
+
+if __name__ == "__main__":
+            
+    #Use channel name provided (IF one was provided)
+    if len(sys.argv)>1:
+        channel = sys.argv[1].lower()
+        if channel[0]!='#':
+            channel = '#'+channel
+        print ("Connecting to provided channel '"+channel+"'")
+    else:
+        print ("Connecting to default channel '"+channel+"'")
+
+    #Read credentials out of cred file
     try:
-        message = sock.recv(recvAmount)
-    except BlockingIOError:
-        pass
-    except ConnectionAbortedError:
-        print ("Connection got aborted.  Reconnecting")
-        sock = connectToServer()
+        f = open(credFile)
+        nick = f.readline().strip('\n')
+        passw = f.readline().strip('\n')
+        f.close()
+    except FileNotFoundError:
+        print(credFile+" is missing!  Please create this file in your working directory.  First line should be the username for the bot, second line should be the oauth password for it!")
+        exit(1)
 
-    if message is not "":
-        messages = message.decode().rstrip().split("\n")
-        for m in messages:
-            msg = IrcMessage(m)
-            if msg.messageType == 'PRIVMSG':
-                logMessage(msg.sender,msg.msg)
-                if shouldWeRespondToThis(msg,getUserLevel(msg.sender)):
-                    response = respondToThis(msg,sock)
-                    logMessage(nick,response)
-                    
-            elif msg.messageType == 'PING':
-                sock.sendall(b"PONG "+msg.msg.encode('utf-8')+b"\n")
+    sock = connectToServer()
+
+    while(running):
+        message = ""
+
+        #Get any commands or features
+        checkCommandsAndFeatures()
+        
+        try:
+            message = sock.recv(recvAmount)
+        except BlockingIOError:
+            pass
+        except ConnectionAbortedError:
+            print ("Connection got aborted.  Reconnecting")
+            sock = connectToServer()
+
+        if message is not "":
+            messages = message.decode().rstrip().split("\n")
+            for m in messages:
+                msg = IrcMessage(m)
                 
-            elif msg.messageType == 'NOTICE':
-                handleNoticeMessage(msg)
+                if msg.messageType == 'PRIVMSG':
+                    logMessage(msg.sender,msg.msg)
+                    
+                for command in commands:
+                    if command.shouldRespond(msg,getUserLevel(msg.sender)):
+                        response = command.respond(msg,sock)
+                        if len(response)>0:
+                            logMessage(nick,response)
+                """
+                if msg.messageType == 'PING':
+                    sock.sendall(b"PONG "+msg.msg.encode('utf-8')+b"\n")
+                """
+                if msg.messageType == 'NOTICE':
+                    handleNoticeMessage(msg)
 
-    #Check to see if mod list needs to be updated
-    modUpdate = modUpdate - 1
-    if modUpdate == 0:
-        #Send request
-        sock.sendall(b"PRIVMSG "+channel.encode('utf-8')+b" .mods\n")
-        modUpdate = modUpdateFreq
-    
-    sleep(pollFreq)
-print ("DONE!")
-sock.close()
+        #Check to see if mod list needs to be updated
+        modUpdate = modUpdate - 1
+        if modUpdate == 0:
+            #Send request
+            sock.sendall(b"PRIVMSG "+channel.encode('utf-8')+b" .mods\n")
+            modUpdate = modUpdateFreq
+        
+        sleep(pollFreq)
+    print ("DONE!")
+    sock.close()
+
