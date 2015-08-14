@@ -10,7 +10,7 @@ class Ping(c.Command):
         return msg.messageType=="PING"
 
     def respond(self,msg,sock):
-        print ("Responding to PING")
+        #print ("Responding to PING")
         sock.sendall(b"PONG "+msg.msg.encode('utf-8')+b"\n")
         return ""
         
