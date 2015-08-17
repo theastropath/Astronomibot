@@ -11,7 +11,7 @@ c = imp.load_source('Command',baseFile)
 
 class SpamProtection(c.Command):
 
-    commonChars=["!","?",","," ","$"]
+    commonChars=["!","?",","," ","$",".","-","=","(",")","*","&","#"]
     maxAsciiSpam = 10
     maxEmoteSpam = 10
     emoteList ={}
@@ -19,13 +19,13 @@ class SpamProtection(c.Command):
     def asciiSpamCheck(self,msg,userLevel):
         nonAlnumCount=0
         
-        if msg.messageType == 'PRIVMSG': #and userLevel==EVERYONE:
+        if msg.messageType == 'PRIVMSG':
             for char in msg.msg:
                 if not char.isalnum():
                     if char not in self.commonChars:
                         nonAlnumCount = nonAlnumCount+1
 
-        print ("Found "+str(nonAlnumCount)+" non alphanumeric characters")
+        #print ("Found "+str(nonAlnumCount)+" non alphanumeric characters")
         return nonAlnumCount
 
     def emoteSpamCheck(self,msg,userLevel):
@@ -34,6 +34,7 @@ class SpamProtection(c.Command):
         for emote in self.emoteList.keys():
             matches = self.emoteList[emote].findall(msg.msg)
             if len(matches)>0:
+                print(emote+" : Found "+str(len(matches)))
                 emoteCount = emoteCount + len(matches)
 
         return emoteCount
@@ -41,8 +42,8 @@ class SpamProtection(c.Command):
     
     def shouldRespond(self, msg, userLevel):
 
-        #if userLevel != EVERYONE:
-        #    return False
+        if userLevel != EVERYONE:
+            return False
         
         if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
             print ("Should be responding")
@@ -57,13 +58,13 @@ class SpamProtection(c.Command):
     def respond(self,msg,sock):
         response = ""
         if self.asciiSpamCheck(msg,EVERYONE)>self.maxAsciiSpam:
-            response = "Don't spam characters like that "+msg.sender+"!"
+            response = "Don't spam characters like that, "+msg.sender+"!"
             sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
             print(sockResponse)
             sock.sendall(sockResponse.encode('utf-8'))
             
         if self.emoteSpamCheck(msg,EVERYONE)>self.maxEmoteSpam:
-            response = "Don't spam emotes like that "+msg.sender+"!"
+            response = "Don't spam emotes like that, "+msg.sender+"!"
             sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
             print(sockResponse)
             sock.sendall(sockResponse.encode('utf-8'))
@@ -81,4 +82,4 @@ class SpamProtection(c.Command):
     def __init__(self,name):
         super(SpamProtection,self).__init__(name)
         self.loadTwitchEmotes()
-        
+

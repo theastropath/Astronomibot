@@ -71,7 +71,9 @@ def addCustomCommand(command):
             userLevel=EVERYONE
         else:
             return "Invalid user level for command!"
-
+    if len(cmdResp)==0:
+        return "No command response given"
+    
     if cmdResp[0]=="/" or cmdResp[0]==".":
         return "Tut tut, don't try that!"
 
