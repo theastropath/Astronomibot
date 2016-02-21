@@ -45,29 +45,29 @@ class SpamProtection(c.Command):
         if userLevel != EVERYONE:
             return False
         
-        if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
-            print ("Should be responding")
-            return True
+        #if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
+        #    print ("Should be responding")
+        #    return True
 
-        if self.emoteSpamCheck(msg,userLevel)>self.maxEmoteSpam:
-            print ("Should be responding")
-            return True
+        #if self.emoteSpamCheck(msg,userLevel)>self.maxEmoteSpam:
+        #    print ("Should be responding")
+        #    return True
                                
         return False
 
     def respond(self,msg,sock):
         response = ""
-        if self.asciiSpamCheck(msg,EVERYONE)>self.maxAsciiSpam:
-            response = "Don't spam characters like that, "+msg.sender+"!"
-            sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
-            print(sockResponse)
-            sock.sendall(sockResponse.encode('utf-8'))
+        #if self.asciiSpamCheck(msg,EVERYONE)>self.maxAsciiSpam:
+        #    response = "Don't spam characters like that, "+msg.sender+"!"
+        #    sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
+        #    print(sockResponse)
+        #    sock.sendall(sockResponse.encode('utf-8'))
             
-        if self.emoteSpamCheck(msg,EVERYONE)>self.maxEmoteSpam:
-            response = "Don't spam emotes like that, "+msg.sender+"!"
-            sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
-            print(sockResponse)
-            sock.sendall(sockResponse.encode('utf-8'))
+        #if self.emoteSpamCheck(msg,EVERYONE)>self.maxEmoteSpam:
+        #    response = "Don't spam emotes like that, "+msg.sender+"!"
+        #    sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
+        #    print(sockResponse)
+        #    sock.sendall(sockResponse.encode('utf-8'))
             
         return response
 

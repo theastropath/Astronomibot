@@ -153,7 +153,17 @@ def connectToServer():
     print("Connecting to "+twitchIrcServer+":"+str(twitchIrcPort)+" as "+nick)
 
     sock = socket(AF_INET, SOCK_STREAM)
-    sock.connect((twitchIrcServer,twitchIrcPort))
+
+    connSuccess = False;
+
+    while not connSuccess:
+        try:
+            connSuccess = True
+            sock.connect((twitchIrcServer,twitchIrcPort))
+        except:
+            print ("Connection failed.  Retry...")
+            connSuccess = False
+            sleep(10) #Wait 10 seconds, then try again
 
     sock.sendall(b"PASS "+passw.encode('ascii')+b"\n")
     sock.sendall(b"NICK "+nick.encode('ascii')+b"\n")
@@ -239,6 +249,9 @@ if __name__ == "__main__":
             pass
         except ConnectionAbortedError:
             print ("Connection got aborted.  Reconnecting")
+            sock = connectToServer()
+        except ConnectionResetError:
+            print ("Connection got forced closed.  Reconnecting")
             sock = connectToServer()
 
         if message is not "":
