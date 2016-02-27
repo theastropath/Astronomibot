@@ -6,6 +6,14 @@ if __name__ == "__main__":
 c = imp.load_source('Command',baseFile)
 
 class Ping(c.Command):
+    
+    def getParams(self):
+        params = []
+        return params
+
+    def setParam(self, param, val):
+        pass
+    
     def shouldRespond(self, msg, userLevel):
         return msg.messageType=="PING"
 

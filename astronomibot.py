@@ -31,9 +31,9 @@ replaceTerm="$REPLACE"
 
 running = True
 
-modList = [] #List of all moderators for the channel
-commands = []
-features = []
+#modList = [] #List of all moderators for the channel
+#commands = []
+#features = []
 
 #############################################################################################################
 # These two classes define the API for interacting with "commands" and "features"
@@ -52,12 +52,19 @@ class Command:
     def respond(self,msg,sock):
         raise NotImplementedError()
 
+    def getParams(self):
+        raise NotImplementedError()
+
+    def setParam(self, param, val):
+        raise NotImplementedError()
+
     #Equals is used for checking if the name is in the command list
     def __eq__(self,key):
         return key == self.name
 
-    def __init__(self,name):
+    def __init__(self,bot,name):
         self.name = name
+        self.bot = bot
 
 class Feature:
     name = ""
@@ -76,7 +83,89 @@ class Feature:
 
 ###############################################################################################################    
 
+class Bot:
+    modList = [] #List of all moderators for the channel
+    commands = []
+    features = []
+    registeredCmds = []
+    def __init__(self):
+        pass
 
+    def getCommands(self):
+        return self.commands
+
+    def getFeatures(self):
+        return self.features
+
+    def getMods(self):
+        return self.modList
+
+    def getRegCmds(self):
+        return self.registeredCmds
+
+    def isCmdRegistered(self,cmd):
+        for com in self.registeredCmds:
+            if com[0] == cmd:
+                return True
+        return False
+
+    def regCmd(self,cmd,source):
+        self.registeredCmds.append((cmd,source))
+
+    def unregCmd(self,cmd):
+        for com in self.registeredCmds:
+            if com[0]==cmd:
+                self.registeredCmds.remove(com)
+                return
+    def getCmdOwner(self,cmd):
+        for com in self.registeredCmds:
+            if com[0]==cmd:
+                return str(cmd[1])
+        return ""
+    
+    def checkCommandsAndFeatures(self):
+        commandFiles = []
+        for command in os.listdir(commandsDir):
+            commandName = command[:-3]
+            if ".py" in command[-3:] and commandName not in self.commands:
+                commandFiles.append(commandName)
+
+        featureFiles = []  
+        for feature in os.listdir(featuresDir):
+            featureName = feature[:-3]
+            if ".py" in feature[-3:] and featureName not in features:
+                featureFiles.append(featureName)
+
+        for command in commandFiles:
+
+            #Load file, and get the corresponding class in it, then instantiate it
+            c = imp.load_source('Command',commandsDir+os.sep+command+".py")
+            cmd = getattr(c,command)
+            
+            self.commands.append(cmd(self,command))
+            print("Loading command module '"+command+"'")
+            
+        for feature in featureFiles:
+            #Load file, and get the corresponding class in it, then instantiate it
+            f = imp.load_source('Feature',featuresDir+os.sep+feature+".py")
+            feat = getattr(f,feature)
+            
+            self.features.append(feat(self,feature))
+            print("Loading feature module '"+feature+"'")
+                
+    def getUserLevel(self,userName):
+        if userName==channel[1:]:
+            #print(userName+" identified as broadcaster!")
+            return BROADCASTER
+        elif userName in self.modList:
+            #print(userName+" identified as a mod!")
+            return MOD
+        else:
+            #print(userName+" identified as a scrub!")
+            return EVERYONE            
+
+
+##############################################################################################
 class IrcMessage:
     sender = ""
     messageType = ""
@@ -119,23 +208,16 @@ def getModList(channelName):
     return (json.loads(chatters)["chatters"]["moderators"])
 
 
-def getUserLevel(userName):
-    if userName==channel[1:]:
-        #print(userName+" identified as broadcaster!")
-        return BROADCASTER
-    elif userName in modList:
-        #print(userName+" identified as a mod!")
-        return MOD
-    else:
-        #print(userName+" identified as a scrub!")
-        return EVERYONE
+
 
 def handleNoticeMessage(msg):
     if "The moderators of this room are:" in msg.msg:
         #List of mods can be updated
         mods = msg.msg.split(": ")[1]
         for mod in mods.split(", "):
-            modList.append(mod.strip())
+            bot.modList.append(mod.strip())
+    else:
+        print (msg.msg)
 
 def logMessage(sender,msg):
     curTime = datetime.now()
@@ -169,6 +251,8 @@ def connectToServer():
     sock.sendall(b"NICK "+nick.encode('ascii')+b"\n")
     sock.sendall(b"JOIN "+channel.encode('ascii')+b"\n")
     sock.sendall(b"CAP REQ :twitch.tv/commands\n");
+    sock.sendall(b"CAP REQ :twitch.tv/membership\n");
+
 
     sleep (1) #Wait for responses to roll in
 
@@ -183,35 +267,7 @@ def connectToServer():
 
     return sock
 
-def checkCommandsAndFeatures():
-    commandFiles = []
-    for command in os.listdir(commandsDir):
-        commandName = command[:-3]
-        if ".py" in command[-3:] and commandName not in commands:
-            commandFiles.append(commandName)
 
-    featureFiles = []  
-    for feature in os.listdir(featuresDir):
-        featureName = feature[:-3]
-        if ".py" in feature[-3:] and featureName not in features:
-            featureFiles.append(featureName)
-
-    for command in commandFiles:
-
-        #Load file, and get the corresponding class in it, then instantiate it
-        c = imp.load_source('Command',commandsDir+os.sep+command+".py")
-        cmd = getattr(c,command)
-        
-        commands.append(cmd(command))
-        print("Loading command module '"+command+"'")
-        
-    for feature in featureFiles:
-        #Load file, and get the corresponding class in it, then instantiate it
-        f = imp.load_source('Feature',featuresDir+os.sep+feature+".py")
-        feat = getattr(f,feature)
-        
-        features.append(feat(feature))
-        print("Loading feature module '"+feature+"'")
 
 
 if __name__ == "__main__":
@@ -236,12 +292,13 @@ if __name__ == "__main__":
         exit(1)
 
     sock = connectToServer()
+    bot = Bot()
 
     while(running):
         message = ""
 
         #Get any commands or features
-        checkCommandsAndFeatures()
+        bot.checkCommandsAndFeatures()
         
         try:
             message = sock.recv(recvAmount)
@@ -262,8 +319,8 @@ if __name__ == "__main__":
                 if msg.messageType == 'PRIVMSG':
                     logMessage(msg.sender,msg.msg)
                     
-                for command in commands:
-                    if command.shouldRespond(msg,getUserLevel(msg.sender)):
+                for command in bot.getCommands():
+                    if command.shouldRespond(msg,bot.getUserLevel(msg.sender)):
                         response = command.respond(msg,sock)
                         if len(response)>0:
                             logMessage(nick,response)

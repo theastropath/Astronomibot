@@ -6,6 +6,14 @@ if __name__ == "__main__":
 c = imp.load_source('Command',baseFile)
 
 class Test(c.Command):
+
+    def getParams(self):
+        params = []
+        return params
+
+    def setParam(self, param, val):
+        pass
+    
     def shouldRespond(self, msg, userLevel):
         #print ("Test: Should we respond to message type "+msg.messageType+"?")
         return True
