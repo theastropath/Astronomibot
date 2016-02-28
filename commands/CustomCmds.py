@@ -60,7 +60,6 @@ class CustomCmds(c.Command):
             f.close()
         except FileNotFoundError:
             print (commands+" is not present, no commands imported")
-        print("Imported",str(len(self.customCmds)),"Commands")
 
     def addCustomCommand(self,command):
         newCmd = command.split()[0]
@@ -203,10 +202,29 @@ class CustomCmds(c.Command):
             response = "PRIVMSG "+channel+" :"+response+"\n"
             sock.sendall(response.encode('utf-8'))
         elif command == "!list":
-            response = ", ".join(self.customCmds.keys())
-            response = response[:450]+" <truncated>"
-            response = "PRIVMSG "+channel+" :"+response+"\n"
-            sock.sendall(response.encode('utf-8'))
+            numCmds = 0
+            cmds = []
+            allCmds = []
+            for cmd in self.bot.getRegCmds():
+                cmds.append(cmd[0])
+                allCmds.append(cmd[0])
+                numCmds+=1
+                if numCmds == 30: #30 commands per list message
+                    cmdmsg = ", ".join(cmds)
+                    sockMsg = "PRIVMSG "+channel+" :"+cmdmsg+"\n"
+                    sock.sendall(sockMsg.encode('utf-8'))
+                    cmds = []
+                    numCmds = 0
+
+            if len(cmds) != 0:
+                cmdmsg = ", ".join(cmds)
+                sockMsg = "PRIVMSG "+channel+" :"+cmdmsg+"\n"
+                sock.sendall(sockMsg.encode('utf-8'))
+                cmds = []
+                numCmds = 0                
+                    
+            response = ", ".join(allCmds)
+
 
         else:
             if self.customCmds[command]:

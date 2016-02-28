@@ -124,8 +124,7 @@ class SpamProtection(c.Command):
             return True
 
         if self.urlSpamCheck(msg,userLevel):
-            print ("Posted a link...")
-            return True
+            return False
 
 
                                
@@ -172,7 +171,6 @@ class SpamProtection(c.Command):
         emotes = json.loads(response.read().decode())['emoticons']
         for emote in emotes:
             self.emoteList[emote["regex"]] = re.compile(emote["regex"])
-        print ("Found "+str(len(self.emoteList))+" emotes")
 
     def __init__(self,bot,name):
         super(SpamProtection,self).__init__(bot,name)

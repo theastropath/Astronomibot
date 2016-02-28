@@ -152,7 +152,7 @@ class Bot:
             cmd = getattr(c,command)
             
             self.commands.append(cmd(self,command))
-            print("Loading command module '"+command+"'")
+            print("Loaded command module '"+command+"'")
             
         for feature in featureFiles:
             #Load file, and get the corresponding class in it, then instantiate it
@@ -160,7 +160,7 @@ class Bot:
             feat = getattr(f,feature)
             
             self.features.append(feat(self,feature))
-            print("Loading feature module '"+feature+"'")
+            print("Loaded feature module '"+feature+"'")
                 
     def getUserLevel(self,userName):
         if userName==channel[1:]:
