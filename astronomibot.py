@@ -19,8 +19,7 @@ nick=""
 passw=""
 
 pollFreq=0.5
-modUpdateFreq = 600 #In units based on the pollFreq
-modUpdate = 1
+
 recvAmount=4096
 
 EVERYONE=1
@@ -77,8 +76,9 @@ class Feature:
     def __eq__(self,key):
         return key == self.name
     
-    def __init__(self,name):
+    def __init__(self,bot,name):
         self.name = name
+        self.bot = bot
 
 
 ###############################################################################################################    
@@ -88,8 +88,8 @@ class Bot:
     commands = []
     features = []
     registeredCmds = []
-    def __init__(self):
-        pass
+    def __init__(self,channel):
+        self.channel = channel
 
     def getCommands(self):
         return self.commands
@@ -133,7 +133,7 @@ class Bot:
         featureFiles = []  
         for feature in os.listdir(featuresDir):
             featureName = feature[:-3]
-            if ".py" in feature[-3:] and featureName not in features:
+            if ".py" in feature[-3:] and featureName not in self.features:
                 featureFiles.append(featureName)
 
         for command in commandFiles:
@@ -292,7 +292,7 @@ if __name__ == "__main__":
         exit(1)
 
     sock = connectToServer()
-    bot = Bot()
+    bot = Bot(channel)
 
     while(running):
         message = ""
@@ -331,12 +331,11 @@ if __name__ == "__main__":
                 if msg.messageType == 'NOTICE':
                     handleNoticeMessage(msg)
 
-        #Check to see if mod list needs to be updated
-        modUpdate = modUpdate - 1
-        if modUpdate == 0:
-            #Send request
-            sock.sendall(b"PRIVMSG "+channel.encode('utf-8')+b" .mods\n")
-            modUpdate = modUpdateFreq
+                    
+        for feature in bot.getFeatures():
+            feature.handleFeature(sock)
+            
+
         
         sleep(pollFreq)
     print ("DONE!")

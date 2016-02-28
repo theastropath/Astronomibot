@@ -93,7 +93,6 @@ class SpamProtection(c.Command):
                     if char not in self.commonChars:
                         nonAlnumCount = nonAlnumCount+1
 
-        #print ("Found "+str(nonAlnumCount)+" non alphanumeric characters")
         return nonAlnumCount
 
     def emoteSpamCheck(self,msg,userLevel):
@@ -102,7 +101,6 @@ class SpamProtection(c.Command):
         for emote in self.emoteList.keys():
             matches = self.emoteList[emote].findall(msg.msg)
             if len(matches)>0:
-                #print(emote+" : Found "+str(len(matches)))
                 emoteCount = emoteCount + len(matches)
 
         return emoteCount
@@ -120,11 +118,9 @@ class SpamProtection(c.Command):
             return False
         
         if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
-            #print ("Should be responding")
             return True
 
         if self.emoteSpamCheck(msg,userLevel)>self.maxEmoteSpam:
-            #print ("Should be responding")
             return True
 
         if self.urlSpamCheck(msg,userLevel):
@@ -172,7 +168,6 @@ class SpamProtection(c.Command):
         return response
 
     def loadTwitchEmotes(self):
-        #Web method, will keep as a backup, but not used for now
         response = urlopen('https://api.twitch.tv/kraken/chat/emoticons')
         emotes = json.loads(response.read().decode())['emoticons']
         for emote in emotes:
