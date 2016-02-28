@@ -5,7 +5,7 @@ if __name__ == "__main__":
     
 c = imp.load_source('Command',baseFile)
 
-class ModListUpdate(c.Command):
+class ModListUpdate(c.Feature):
     modUpdateFreq = 600 #In units based on the pollFreq (In astronomibot.py)
     modUpdate = 1
 

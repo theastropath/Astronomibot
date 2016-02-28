@@ -6,18 +6,28 @@ if __name__ == "__main__":
     
 c = imp.load_source('Command',baseFile)
 
-class OutputConfig(c.Command):
+class OutputConfig(c.Feature):
     configOutputFreq = 60
     outputTime = 1
     configExt = ".cfg"
     configDir = "config"
+    
+    def getParams(self):
+        params = []
+        params.append({'title':'ConfigUpdateFreq','desc':'How frequently the configs should be output (seconds)','val':self.configOutputFreq/2})
 
-    def outputConfig(self,command):
+        return params
+
+    def setParam(self, param, val):
+        if param == 'ConfigUpdateFreq':
+            self.configOutputFreq = val * 2
+
+    def outputConfig(self,obj):
         if not os.path.exists(self.configDir+os.sep+self.bot.channel[1:]):
             os.makedirs(self.configDir+os.sep+self.bot.channel[1:])
-        if len(command.getParams())>0:
-            f = open(os.path.join(self.configDir,self.bot.channel[1:],command.name+self.configExt),'w')
-            for param in command.getParams():
+        if len(obj.getParams())>0:
+            f = open(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt),'w')
+            for param in obj.getParams():
                 f.write(param['title']+" "+str(param['val'])+"\n")
             f.close()
     
@@ -28,6 +38,8 @@ class OutputConfig(c.Command):
             #Output configuration
             for command in self.bot.getCommands():
                 self.outputConfig(command)
+            for feature in self.bot.getFeatures():
+                self.outputConfig(feature)
 
                     
         

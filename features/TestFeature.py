@@ -5,7 +5,7 @@ if __name__ == "__main__":
     
 c = imp.load_source('Command',baseFile)
 
-class TestFeature(c.Command):
+class TestFeature(c.Feature):
 
     def handleFeature(self,sock):
         pass

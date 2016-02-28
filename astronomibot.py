@@ -52,10 +52,11 @@ class Command:
         raise NotImplementedError()
 
     def getParams(self):
-        raise NotImplementedError()
+        params = []
+        return params
 
     def setParam(self, param, val):
-        raise NotImplementedError()
+        pass
 
     #Equals is used for checking if the name is in the command list
     def __eq__(self,key):
@@ -71,7 +72,14 @@ class Feature:
     #This function will go off and do whatever this feature is supposed to do
     def handleFeature(self,sock):
         raise NotImplementedError()
+    
+    def getParams(self):
+        params = []
+        return params
 
+    def setParam(self, param, val):
+        pass
+    
     #Equals is used for checking if the name is in the feature list
     def __eq__(self,key):
         return key == self.name
@@ -88,6 +96,7 @@ class Bot:
     commands = []
     features = []
     registeredCmds = []
+    chatters = []
     def __init__(self,channel):
         self.channel = channel
 
@@ -206,9 +215,6 @@ def getModList(channelName):
     response = urlopen('http://tmi.twitch.tv/group/user/'+channelName[1:]+'/chatters')
     chatters = response.read().decode()
     return (json.loads(chatters)["chatters"]["moderators"])
-
-
-
 
 def handleNoticeMessage(msg):
     if "The moderators of this room are:" in msg.msg:
