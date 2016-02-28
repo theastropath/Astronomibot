@@ -2,6 +2,7 @@ import imp
 import json
 import re
 from urllib.request import urlopen
+from time import time
 
 baseFile = "astronomibot.py"
 if __name__ == "__main__":
@@ -27,19 +28,50 @@ url = r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|ed
 
 url_re = re.compile(url, re.VERBOSE | re.MULTILINE)
 
+class SpamOffender():
 
+    def warn(self):
+        self.time = time()
+
+    def timeOut(self):
+        self.time = time()
+        self.numTimeouts += 1
+
+    def wasWarned(self,period):
+        return time()-self.time < period
+
+    def getNumTimeouts(self):
+        return self.numTimeouts
+
+    def getName(self):
+        return self.name
+
+    def __eq__(self,key):
+        return key == self.name
+    
+    def __init__(self,name):
+        self.name = name
+        self.time = time()
+        self.numTimeouts = 0
+        
 
 class SpamProtection(c.Command):
 
     commonChars=["!","?",","," ","$",".","-","=","(",")","*","&","#",":","/","\\"]
     maxAsciiSpam = 10
     maxEmoteSpam = 10
+    timeoutPeriod = 30 #in seconds
+    warningPeriod = 300 #In seconds
+    offenders = []
     emoteList ={}
 
     def getParams(self):
         params = []
         params.append({'title':'AsciiLimit','desc':'Number of non-standard characters allowed in a message before the user is warned','val':self.maxAsciiSpam})
         params.append({'title':'EmoteLimit','desc':'Number of emotes allowed in a message before the user is warned','val':self.maxEmoteSpam})
+        params.append({'title':'TimeOutPeriod','desc':'Default timeout time for spam offenses','val':self.timeoutPeriod})
+        params.append({'title':'WarningPeriod','desc':'Time allowed between "spam" messages before they are timed out','val':self.warningPeriod})
+
         return params
 
     def setParam(self, param, val):
@@ -47,6 +79,10 @@ class SpamProtection(c.Command):
             self.maxAsciiSpam = val
         elif param == 'EmoteLimit':
             self.maxEmoteSpam = val
+        elif param == 'TimeOutPeriod':
+            self.timeoutPeriod = val
+        elif param == 'WarningPeriod':
+            self.warningPeriod = val
 
     def asciiSpamCheck(self,msg,userLevel):
         nonAlnumCount=0
@@ -80,8 +116,8 @@ class SpamProtection(c.Command):
     
     def shouldRespond(self, msg, userLevel):
 
-        #if userLevel != EVERYONE:
-        #    return False
+        if userLevel != EVERYONE:
+            return False
         
         if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
             #print ("Should be responding")
@@ -101,18 +137,38 @@ class SpamProtection(c.Command):
 
     def respond(self,msg,sock):
         response = ""
+        warnOnly = True
+        
         if self.asciiSpamCheck(msg,EVERYONE)>self.maxAsciiSpam:
             response = "Don't spam characters like that, "+msg.sender+"!"
-            sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
-            #print(sockResponse)
-            sock.sendall(sockResponse.encode('utf-8'))
             
         if self.emoteSpamCheck(msg,EVERYONE)>self.maxEmoteSpam:
             response = "Don't spam emotes like that, "+msg.sender+"!"
-            sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
-            #print(sockResponse)
-            sock.sendall(sockResponse.encode('utf-8'))
+
+        if msg.sender in self.offenders:
+            offender = self.offenders[self.offenders.index(msg.sender)]
+            if offender.wasWarned(self.warningPeriod):
+                offender.timeOut()
+                timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
+                response = response + " ("+str(timeoutLength)+" second time out)"
+                toMsg = "PRIVMSG "+channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
+                sock.sendall(toMsg.encode('utf-8'))
+
+
+            else:
+                offender.warn()
+                response = response + " (Warning)"
+        else:
+            offender = SpamOffender(msg.sender)
+            self.offenders.append(offender)
+            response = response + " (Warning)"
             
+            
+    
+
+        sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
+        sock.sendall(sockResponse.encode('utf-8'))
+
         return response
 
     def loadTwitchEmotes(self):
