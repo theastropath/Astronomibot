@@ -89,7 +89,6 @@ class WebsiteOutput(c.Feature):
                     filepath = self.outputLocation+os.sep+self.bot.channel[1:]+os.sep+file
                     f = open(filepath,'rb')
                     ftp.storlines("STOR "+file,f)
-                print("Uploaded")
                 ftp.close()
             except:
                 print("Encountered an error trying to deal with the FTP connection")
