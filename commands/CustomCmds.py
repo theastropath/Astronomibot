@@ -24,7 +24,13 @@ class CustomCommand:
         if len(afterCmd)>0 and afterCmd[0]=="/":
             afterCmd = ""
         return self.response.replace(replaceTerm,afterCmd)
+    
+    def __eq__(self,key):
+        return key == self.command
 
+    def __lt__(self,other):
+        return other < self.command
+    
     def exportCommand(self):
         return self.command+" "+str(self.userlevel)+" "+self.response+'\n'
 
@@ -48,7 +54,7 @@ class CustomCmds(c.Command):
         try:
             f = open(commands,encoding="utf-8")
             for line in f:
-                command = line.split()[0].lower()
+                command = line.split()[0].lower().strip()
                 userLvl = int(line.split()[1])
                 response = " ".join(line.split()[2:]).rstrip()
                 if not self.bot.isCmdRegistered(command):
@@ -148,7 +154,7 @@ class CustomCmds(c.Command):
         if cmd[0]=="!":
             if cmd in self.customCmds.keys():
                 del self.customCmds[cmd]
-                self.bot.unregCmd(cmd,self)
+                self.bot.unregCmd(cmd)
                 self.exportCommands()
                 return "Command "+cmd+" has been deleted"
             else:
@@ -164,7 +170,30 @@ class CustomCmds(c.Command):
     def setParam(self, param, val):
         if param == 'ModComLevel':
             self.modComLevel = val
-        
+
+    def getState(self):
+        state = []
+        state.append(("Command Name","Description"))
+        state.append(("!addcom",'Add a command to Astronomibot.  Format: "!addcom [userLevel] [response]" '))
+        state.append(("!editcom",'Edits an existing command in Astronomibot.  Format: "!editcom [userLevel] [response]" '))
+        state.append(("!delcom",'Removes a command from Astronomibot.  Format: "!delcom [command]" '))
+        state.append(("!list",'Returns a list of all custom commands in chat'))
+
+        allCmds = []
+        for cmd in sorted(self.customCmds.keys()):
+            allCmds.append(self.customCmds[cmd])
+
+        for cmd in allCmds:
+            state.append((cmd.command,cmd.response))
+
+        return [state]
+
+    def getDescription(self, full=False):
+        if full:
+            return "A module that allows users to create their own commands"
+        else:
+            return "User-defined commands"
+    
     def shouldRespond(self, msg, userLevel):
         if msg.messageType == 'PRIVMSG' and len(msg.msg)!=0:
             if msg.msg[0]=='!':
@@ -206,8 +235,12 @@ class CustomCmds(c.Command):
             cmds = []
             allCmds = []
             for cmd in self.bot.getRegCmds():
-                cmds.append(cmd[0])
                 allCmds.append(cmd[0])
+
+            allCmds.sort()
+            
+            for cmd in allCmds:
+                cmds.append(cmd)
                 numCmds+=1
                 if numCmds == 30: #30 commands per list message
                     cmdmsg = ", ".join(cmds)

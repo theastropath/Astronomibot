@@ -58,6 +58,12 @@ class Command:
     def setParam(self, param, val):
         pass
 
+    def getState(Self):
+        return None
+
+    def getDescription(self,full=False):
+        return "A generic undescribed Command"
+    
     #Equals is used for checking if the name is in the command list
     def __eq__(self,key):
         return key == self.name
@@ -79,6 +85,12 @@ class Feature:
 
     def setParam(self, param, val):
         pass
+
+    def getState(self):
+        return None
+
+    def getDescription(self,full=False):
+        return "A generic undescribed Feature"
     
     #Equals is used for checking if the name is in the feature list
     def __eq__(self,key):
@@ -131,6 +143,14 @@ class Bot:
             if com[0]==cmd:
                 return str(cmd[1])
         return ""
+
+    def getChatters(self):
+        chat = []
+        chatterList = self.chatters
+        chatterList.sort()
+        for chatter in chatterList:
+            chat.append((chatter,userLevelToStr(self.getUserLevel(chatter))))
+        return chat
     
     def checkCommandsAndFeatures(self):
         commandFiles = []
@@ -208,6 +228,18 @@ class IrcMessage:
 
         if (len(self.msg)==0):
             self.messageType = "INVALID"
+
+
+def userLevelToStr(userLevel):
+    if userLevel == EVERYONE:
+        return "Normal"
+    elif userLevel == MOD:
+        return "Moderator"
+    elif userLevel == BROADCASTER:
+        return "Broadcaster"
+    else:
+        return "???"
+
 
 
 def getModList(channelName):

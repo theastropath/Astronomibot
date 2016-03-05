@@ -19,6 +19,45 @@ class GiveAway(c.Command):
     def setParam(self, param, val):
         pass
 
+    def getState(self):
+        tables = []
+
+        state = []
+        state.append(("Setting","Value"))
+        state.append(("Giveaway Running",str(self.running)))
+        state.append(("Using Keyword?",str(self.usingKeyword)))
+        state.append(("Giveaway Keyword",self.keyword))
+
+        cmds = []
+        cmds.append(("Command","Description","Example"))
+        cmds.append(("start","Starts the giveaway and collects eligible users (Either those who are active in chat, or those who entered the keyword, if applicable)","!giveaway start"))
+        cmds.append(("stop","Stops the collection of eligible users","!giveaway stop"))
+        cmds.append(("draw","Draws a random user from the list of eligible users.  If done immediately after a reset, it will draw from all users in chat.  If done after starting the giveaway, it will only draw from those who have chatted, or said the keyword (if a keyword is being used)","!giveaway draw"))
+        cmds.append(("keyword","Sets the keyword for the giveaway.  Keyword can also be a phrase.  Keyword is not case sensitive", '!giveaway keyword [insert keyword here]'))
+        cmds.append(("reset","Resets the eligible users, removes the keyword, and stops the giveaway.","!giveaway reset"))
+
+
+        eligible = []
+        eligible.append(("Eligible Users",))
+        if len(self.eligible)>0:
+            for user in sorted(self.eligible):
+                eligible.append((user,))
+        else:
+            for chatter in sorted(self.bot.chatters):
+                eligible.append((chatter,))
+
+        tables.append(state)
+        tables.append(cmds)
+        tables.append(eligible)
+
+        return tables
+    
+    def getDescription(self, full=False):
+        if full:
+            return "Moderators can set up and operate raffles via Astronomibot.  Commands shown are added after a generic '!giveaway' command."
+        else:
+            return "Run raffles and giveaways!"
+        
     def getGiveAwayHelp(self):
         response = "Set a giveaway keyword with '!giveaway keyword <phrase>', then start with '!giveaway start'.  Anyone who types the keyword will be entered.  Draw a winner with '!giveaway draw'.  Can also do 'reset' and 'stop'"
         return response
