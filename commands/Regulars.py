@@ -33,7 +33,6 @@ class Regulars(c.Command):
             for line in f:
                 reg = line.strip()
                 self.bot.regulars.append(reg)
-                print ("adding "+reg+" as reg")
             f.close()
         except FileNotFoundError:
             print ("Regulars file is not present")
@@ -66,7 +65,7 @@ class Regulars(c.Command):
     
     def getDescription(self, full=False):
         if full:
-            return "Functionality for giving 'regular viewers' higher permission levels to perform commands than those just watching for the first time"
+            return "Functionality for giving 'regular viewers' higher permission levels to perform commands than those just watching for the first time.  Only usable by moderators or above"
         else:
             return "Managing 'regular viewers'"
     

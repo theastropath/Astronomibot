@@ -11,19 +11,21 @@ class CustomCommand:
     response = ""
     userlevel = EVERYONE
 
-    def __init__(self,command,response,userlevel=EVERYONE):
+    def __init__(self,command,response,callcount=0,userlevel=EVERYONE):
         self.command = command
         self.response = response
         self.userlevel=userlevel
+        self.callcount=callcount
 
     def canUseCommand(self,userlevel):
         return userlevel>=self.userlevel
 
     def getResponse(self,msg):
+        self.callcount+=1
         afterCmd = " ".join(msg.msg.split()[1:]).rstrip()
         if len(afterCmd)>0 and afterCmd[0]=="/":
             afterCmd = ""
-        return self.response.replace(replaceTerm,afterCmd)
+        return self.response.replace(replaceTerm,afterCmd).replace(countTerm,str(self.callcount))
     
     def __eq__(self,key):
         return key == self.command
@@ -32,7 +34,7 @@ class CustomCommand:
         return other < self.command
     
     def exportCommand(self):
-        return self.command+" "+str(self.userlevel)+" "+self.response+'\n'
+        return self.command+" "+str(self.userlevel)+" "+str(self.callcount)+" "+self.response+'\n'
 
 
 
@@ -56,10 +58,17 @@ class CustomCmds(c.Command):
             for line in f:
                 command = line.split()[0].lower().strip()
                 userLvl = int(line.split()[1])
-                response = " ".join(line.split()[2:]).rstrip()
+
+                callcount=0
+                if line.split()[2].isdigit():
+                    callcount = int(line.split()[2])
+                    response = " ".join(line.split()[3:]).rstrip()
+                else:
+                    response = " ".join(line.split()[2:]).rstrip()
+                    
                 if not self.bot.isCmdRegistered(command):
                     self.bot.regCmd(command,self)
-                    self.customCmds[command]=CustomCommand(command,response,userLvl)
+                    self.customCmds[command]=CustomCommand(command,response,callcount,userLvl)
                 else:
                     print(command,"is already registered to ",self.bot.getCmdOwner(command))
 
@@ -177,24 +186,24 @@ class CustomCmds(c.Command):
 
     def getState(self):
         state = []
-        state.append(("Command Name","Description", "User Level"))
-        state.append(("!addcom",'Add a command to Astronomibot.  Format: "!addcom [userLevel] [response]" ',userLevelToStr(self.modComLevel)))
-        state.append(("!editcom",'Edits an existing command in Astronomibot.  Format: "!editcom [userLevel] [response]" ',userLevelToStr(self.modComLevel)))
-        state.append(("!delcom",'Removes a command from Astronomibot.  Format: "!delcom [command]" ',userLevelToStr(self.modComLevel)))
-        state.append(("!list",'Returns a list of all custom commands in chat',userLevelToStr(self.modComLevel)))
+        state.append(("Command Name","Description", "User Level", "Use Count"))
+        state.append(("!addcom",'Add a command to Astronomibot.  Format: "!addcom [userLevel] [response]" ',userLevelToStr(self.modComLevel),""))
+        state.append(("!editcom",'Edits an existing command in Astronomibot.  Format: "!editcom [userLevel] [response]" ',userLevelToStr(self.modComLevel),""))
+        state.append(("!delcom",'Removes a command from Astronomibot.  Format: "!delcom [command]" ',userLevelToStr(self.modComLevel),""))
+        state.append(("!list",'Returns a list of all custom commands in chat',userLevelToStr(self.modComLevel),""))
 
         allCmds = []
         for cmd in sorted(self.customCmds.keys()):
             allCmds.append(self.customCmds[cmd])
 
         for cmd in allCmds:
-            state.append((cmd.command,cmd.response,userLevelToStr(cmd.userlevel)))
+            state.append((cmd.command,cmd.response,userLevelToStr(cmd.userlevel),str(cmd.callcount)))
 
         return [state]
 
     def getDescription(self, full=False):
         if full:
-            return "A module that allows users to create their own commands"
+            return "A module that allows users to create their own commands.  \n$REPLACE will be replaced with anything after the command name.\n$COUNT will be replaced with the number of times the command has been used"
         else:
             return "User-defined commands"
     
@@ -272,6 +281,10 @@ class CustomCmds(c.Command):
         #Now strip the IRC formatting off again so that we can log the response
         response = ":".join(response.split(":")[1:])
         response = response[:-1]
+
+        #Export commands to update call counts
+        self.exportCommands()
+
         return response
 
     def __init__(self,bot,name):

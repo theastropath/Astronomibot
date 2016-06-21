@@ -29,6 +29,7 @@ MOD=3
 BROADCASTER=4
 
 replaceTerm="$REPLACE"
+countTerm="$COUNT"
 
 running = True
 
