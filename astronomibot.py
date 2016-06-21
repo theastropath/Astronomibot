@@ -243,7 +243,7 @@ class IrcMessage:
 
 def userLevelToStr(userLevel):
     if userLevel == EVERYONE:
-        return "Normal"
+        return "Everyone"
     elif userLevel == REGULAR:
         return "Regular Viewer"
     elif userLevel == MOD:

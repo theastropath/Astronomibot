@@ -39,7 +39,7 @@ class CustomCommand:
 
 class CustomCmds(c.Command):
 
-    modComLevel = EVERYONE
+    modComLevel = REGULAR
     customCmds = {} #Dictionary of all custom commands implemented on this bot
     
     def exportCommands(self):
@@ -177,18 +177,18 @@ class CustomCmds(c.Command):
 
     def getState(self):
         state = []
-        state.append(("Command Name","Description"))
-        state.append(("!addcom",'Add a command to Astronomibot.  Format: "!addcom [userLevel] [response]" '))
-        state.append(("!editcom",'Edits an existing command in Astronomibot.  Format: "!editcom [userLevel] [response]" '))
-        state.append(("!delcom",'Removes a command from Astronomibot.  Format: "!delcom [command]" '))
-        state.append(("!list",'Returns a list of all custom commands in chat'))
+        state.append(("Command Name","Description", "User Level"))
+        state.append(("!addcom",'Add a command to Astronomibot.  Format: "!addcom [userLevel] [response]" ',userLevelToStr(self.modComLevel)))
+        state.append(("!editcom",'Edits an existing command in Astronomibot.  Format: "!editcom [userLevel] [response]" ',userLevelToStr(self.modComLevel)))
+        state.append(("!delcom",'Removes a command from Astronomibot.  Format: "!delcom [command]" ',userLevelToStr(self.modComLevel)))
+        state.append(("!list",'Returns a list of all custom commands in chat',userLevelToStr(self.modComLevel)))
 
         allCmds = []
         for cmd in sorted(self.customCmds.keys()):
             allCmds.append(self.customCmds[cmd])
 
         for cmd in allCmds:
-            state.append((cmd.command,cmd.response))
+            state.append((cmd.command,cmd.response,userLevelToStr(cmd.userlevel)))
 
         return [state]
 
