@@ -83,6 +83,10 @@ class CustomCmds(c.Command):
                 newCmd = command.split()[1]
                 cmdResp = " ".join(command.split()[2:])
                 userLevel=MOD
+            elif newCmd == "REGULAR":
+                newCmd = command.split()[1]
+                cmdResp = " ".join(command.split()[2:])
+                userLevel=REGULAR                
             elif newCmd == "EVERYONE":
                 newCmd = command.split()[1]
                 cmdResp = " ".join(command.split()[2:])

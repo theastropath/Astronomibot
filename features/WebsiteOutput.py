@@ -25,6 +25,7 @@ class WebsiteOutput(c.Feature):
         response = '<!DOCTYPE html><html><head>'
         response+= '<style>table, th, td { border: 1px solid black; }</style>'
         response+= '<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'
+        response+= '<meta http-equiv="refresh" content="'+str(int(self.refreshFreq))+'"/>'
         response+= '<title>'+str(title)+'</title>'
         response+= '</head><body bgcolor="#'+background+'">'
         return response
@@ -82,6 +83,7 @@ class WebsiteOutput(c.Feature):
 
     def ftpUpload(self):
         if os.path.exists(self.outputLocation+os.sep+self.bot.channel[1:]):
+            ftp = None
             try:
                 ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass)
                 ftp.cwd(self.ftpDir)
@@ -92,10 +94,12 @@ class WebsiteOutput(c.Feature):
                 ftp.close()
             except:
                 print("Encountered an error trying to deal with the FTP connection")
-                ftp.close()
+                if ftp is not None:
+                    ftp.close()
             
     def __init__(self,bot,name):
         super(WebsiteOutput,self).__init__(bot,name)
+        self.refreshFreq=(bot.pollFreq * self.htmlUpdateFreq)+10
         try:
             f = open(ftpCredFile)
             self.ftpUrl = f.readline().strip('\n')

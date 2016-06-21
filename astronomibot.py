@@ -14,6 +14,7 @@ channel = "#theastropath" #Channel name has to be all lowercase
 logDir = "logs"
 commandsDir = "commands"
 featuresDir = "features"
+configDir = "config"
 
 nick=""
 passw=""
@@ -23,8 +24,9 @@ pollFreq=0.5
 recvAmount=4096
 
 EVERYONE=1
-MOD=2
-BROADCASTER=3
+REGULAR = 2
+MOD=3
+BROADCASTER=4
 
 replaceTerm="$REPLACE"
 
@@ -109,8 +111,15 @@ class Bot:
     features = []
     registeredCmds = []
     chatters = []
+    regulars = []
+    
     def __init__(self,channel):
         self.channel = channel
+        self.regulars = []
+        self.pollFreq = pollFreq
+        self.name = nick
+
+
 
     def getCommands(self):
         return self.commands
@@ -189,6 +198,8 @@ class Bot:
         elif userName in self.modList:
             #print(userName+" identified as a mod!")
             return MOD
+        elif userName in self.regulars:
+            return REGULAR
         else:
             #print(userName+" identified as a scrub!")
             return EVERYONE            
@@ -233,6 +244,8 @@ class IrcMessage:
 def userLevelToStr(userLevel):
     if userLevel == EVERYONE:
         return "Normal"
+    elif userLevel == REGULAR:
+        return "Regular Viewer"
     elif userLevel == MOD:
         return "Moderator"
     elif userLevel == BROADCASTER:

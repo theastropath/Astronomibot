@@ -45,7 +45,8 @@ class GiveAway(c.Command):
         else:
             for chatter in sorted(self.bot.chatters):
                 eligible.append((chatter,))
-
+        if (("astronomibot",) in eligible):
+            eligible.remove(("astronomibot",))
         tables.append(state)
         tables.append(cmds)
         tables.append(eligible)
@@ -111,11 +112,14 @@ class GiveAway(c.Command):
                     winner = ""
                     if len(self.eligible)==0:
                         #Draw from all chatters
-                        winner = random.choice(self.bot.chatters)
+                        eligible = self.bot.chatters
                     else:
                         #Draw from those in the eligible list
-                        winner = random.choice(self.eligible)
-
+                        eligible = self.eligible
+                        
+                    if ("astronomibot" in eligible):
+                        eligible.remove("astronomibot")
+                    winner = random.choice(self.eligible)
                     response = "Giveaway: The winner is "+winner+"!"
                 elif fullCmd[1] == "reset":
                     self.keyword = ""
