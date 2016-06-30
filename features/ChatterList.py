@@ -1,6 +1,6 @@
 import imp
 from urllib.request import urlopen
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 import json
 
 baseFile = "astronomibot.py"
@@ -40,5 +40,8 @@ class ChatterList(c.Feature):
             except HTTPError as e:
                 #print("HTTP Error "+str(e.code))
                 pass  #Silently accept that this interface will spew 502s all the time
-            except:
-                print("Some other error when trying to get chatters...")
+            except URLError as e:
+                #print("URL Error: "+str(e.reason))
+                pass #Sometimes it seems like we can't get a connection, or some other issue
+            except Exception as ex:
+                print("Some other error ("+type(ex).__name__+") when trying to get chatters...")
