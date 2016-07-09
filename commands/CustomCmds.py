@@ -77,6 +77,9 @@ class CustomCmds(c.Command):
             print (commands+" is not present, no commands imported")
 
     def addCustomCommand(self,command):
+        if len(command)==0:
+            return "No command name given"
+        
         newCmd = command.split()[0]
         userLevel=EVERYONE
 
@@ -121,6 +124,8 @@ class CustomCmds(c.Command):
             return "Adding "+newCmd+" which will respond with '"+cmdResp+"'"
 
     def editCustomCommand(self,command):
+        if len(command)==0:
+            return "No command name given"
         newCmd = command.split()[0]
         userLevelChanged = False
         userLevel=EVERYONE
@@ -162,6 +167,8 @@ class CustomCmds(c.Command):
             return "Command '"+newCmd+"' doesn't exist!"
 
     def delCustomCommand(self,command):
+        if len(command)==0:
+            return "No command name given"
         cmd = command.split()[0]
 
         if cmd[0]=="!":
@@ -175,6 +182,25 @@ class CustomCmds(c.Command):
                 
         else:
             return  "No command name given!"
+
+    def resetCustomCommandCount(self,command):
+        if len(command)==0:
+            return "No command name given"
+        cmd = command.split()[0]
+        newCount = 0
+        if len(command.split())>1:
+            if command.split()[1].isdigit():
+                newCount = int(command.split()[1])
+
+        if cmd[0]=="!":
+            if cmd in self.customCmds.keys():
+                self.customCmds[cmd].callcount=newCount
+                return "Command "+cmd+" call count has been reset to "+str(newCount)
+            else:
+                return "command "+cmd+" does not exist"
+
+        else:
+            return "No command name given!"
         
     def getParams(self):
         params = [{'title':'ModComLevel','desc':'What user level do you need to be to edit commands','val':self.modComLevel}]
@@ -193,6 +219,8 @@ class CustomCmds(c.Command):
         defaults.append(("!editcom",'Edits an existing command in Astronomibot.  Format: "!editcom [userLevel] [response]" ',userLevelToStr(self.modComLevel)))
         defaults.append(("!delcom",'Removes a command from Astronomibot.  Format: "!delcom [command]" ',userLevelToStr(self.modComLevel)))
         defaults.append(("!list",'Returns a list of all custom commands in chat',userLevelToStr(self.modComLevel)))
+        defaults.append(("!resetcount",'Resets the use count of a command.  Format: "!resetcount [command] [new count]"',userLevelToStr(self.modComLevel)))
+        
 
         state.append(("Command Name","Description", "User Level", "Use Count"))
 
@@ -219,7 +247,7 @@ class CustomCmds(c.Command):
             if msg.msg[0]=='!':
                 command = msg.msg.split()[0].lower() #Only care about the first word
                 #Only a few hardcoded commands, then user editable commands
-                if command == "!addcom" or command == "!editcom" or command == "!delcom":
+                if command == "!addcom" or command == "!editcom" or command == "!delcom" or command == "!resetcount":
                     print("Got a com mod command")
                     if userLevel>=self.modComLevel:
                         return True
@@ -250,6 +278,12 @@ class CustomCmds(c.Command):
             response = self.delCustomCommand(newCmd)
             response = "PRIVMSG "+channel+" :"+response+"\n"
             sock.sendall(response.encode('utf-8'))
+        elif command == "!resetcount":
+            newCmd = " ".join(msg.msg.split()[1:])
+            response = self.resetCustomCommandCount(newCmd)
+            response = "PRIVMSG "+channel+" :"+response+"\n"
+            sock.sendall(response.encode('utf-8'))
+
         elif command == "!list":
             numCmds = 0
             cmds = []
@@ -315,6 +349,11 @@ class CustomCmds(c.Command):
             self.bot.regCmd("!list",self)
         else:
             print("!list is already registered to ",self.bot.getCmdOwner("!list"))
+            
+        if not self.bot.isCmdRegistered("!resetcount"):
+            self.bot.regCmd("!resetcount",self)
+        else:
+            print("!resetcount is already registered to ",self.bot.getCmdOwner("!resetcount"))
             
         self.importCommands()
 
