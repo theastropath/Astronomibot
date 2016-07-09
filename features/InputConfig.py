@@ -25,12 +25,10 @@ class InputConfig(c.Feature):
     def readConfig(self,obj):
         if os.path.exists(self.configDir+os.sep+self.bot.channel[1:]):
             if len(obj.getParams())>0: #Has parameters to configure
-                print (obj.name)
                 try:
                     f = open(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt),'r')
                     for line in f:
                         param = line.strip().split()
-                        print (str(param))
                         obj.setParam(param[0],str(param[1]))
                     f.close()
                 except FileNotFoundError:
