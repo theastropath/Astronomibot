@@ -23,6 +23,11 @@ class MiLight(c.Command):
         else:
             print("!light is already registered to ",self.bot.getCmdOwner("!light"))
             
+        if not self.bot.isCmdRegistered("!lightgroup"):
+            self.bot.regCmd("!lightgroup",self)
+        else:
+            print("!lightgroup is already registered to ",self.bot.getCmdOwner("!lightgroup"))
+            
         if not self.bot.isCmdRegistered("!disco"):
             self.bot.regCmd("!disco",self)
         else:
@@ -45,6 +50,7 @@ class MiLight(c.Command):
         state=[]
         state.append(("",""))
         state.append(("Last State",self.lastState))
+        state.append(("Light Group",str(self.lightgroup)))
         state.append(("",""))
 
         cmds = []
@@ -78,7 +84,7 @@ class MiLight(c.Command):
         if param == 'LightControllerIP':
             self.lightcontrollerip = val
         if param == 'LightControllerPort':
-            self.lightcontrollerport = val
+            self.lightcontrollerport = int(val)
 
         if self.lightgroup!=0 and len(self.lightcontrollerip)>0:    
             self.cont = milight.MiLight({'host':self.lightcontrollerip,'port':self.lightcontrollerport},wait_duration=0)
@@ -89,6 +95,8 @@ class MiLight(c.Command):
             
     
     def shouldRespond(self, msg, userLevel):
+        if not self.enabled:
+            return False
         if self.lightgroup==0 or len(self.lightcontrollerip)==0:
             return False
         if msg.messageType == 'PRIVMSG' and len(msg.msg)!=0:
@@ -99,6 +107,8 @@ class MiLight(c.Command):
             if splitMsg[0]=='!disco':
                 return True
             if splitMsg[0]=='!swirl':
+                return True
+            if splitMsg[0]=='!lightgroup' and userLevel == BROADCASTER:
                 return True
         return False
 
@@ -129,6 +139,7 @@ class MiLight(c.Command):
             self.cont.send(self.light.color(milight.color_from_rgb(red,green,blue),self.lightgroup))
             self.lastState = "R"+str(red)+" G"+str(green)+" B"+str(blue)
             response = "Light changed to R"+str(red)+" G"+str(green)+" B"+str(blue)
+            
         elif splitMsg[0]=='!disco':
             self.cont.send(self.light.party('rainbow_jump',self.lightgroup))
             self.lastState="Disco Mode"
@@ -139,6 +150,19 @@ class MiLight(c.Command):
             self.lastState="Rainbow Swirl Mode"
             response = "Light switched to rainbow swirl mode"
 
+        elif splitMsg[0]=='!lightgroup':
+            if len(splitMsg)>1:
+                if splitMsg[1].isdigit():
+                    group = int(splitMsg[1])
+                    if group>=1 and group <=4: 
+                        self.lightgroup=group
+                        response = "Switched to MiLight light group "+str(group)
+                    else:
+                        response = "Invalid MiLight light group"
+                else:
+                    response = "Invalid MiLight light group"
+            else:
+                response = "No MiLight light group provided"
             
         ircResponse = "PRIVMSG "+channel+" :"+response+"\n"
         sock.sendall(ircResponse.encode('utf-8'))
