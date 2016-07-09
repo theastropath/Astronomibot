@@ -20,7 +20,7 @@ class OutputConfig(c.Feature):
 
     def setParam(self, param, val):
         if param == 'ConfigUpdateFreq':
-            self.configOutputFreq = val * 2
+            self.configOutputFreq = float(val) * 2
 
     def outputConfig(self,obj):
         if not os.path.exists(self.configDir+os.sep+self.bot.channel[1:]):

@@ -21,7 +21,7 @@ class ChatterList(c.Feature):
 
     def setParam(self, param, val):
         if param == 'ChatUpdateFreq':
-            self.chatListFreq = val * 2
+            self.chatListFreq = float(val) * 2
 
     
     def handleFeature(self,sock):

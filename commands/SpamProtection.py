@@ -76,13 +76,13 @@ class SpamProtection(c.Command):
 
     def setParam(self, param, val):
         if param == 'AsciiLimit':
-            self.maxAsciiSpam = val
+            self.maxAsciiSpam = int(val)
         elif param == 'EmoteLimit':
-            self.maxEmoteSpam = val
+            self.maxEmoteSpam = int(val)
         elif param == 'TimeOutPeriod':
-            self.timeoutPeriod = val
+            self.timeoutPeriod = int(val)
         elif param == 'WarningPeriod':
-            self.warningPeriod = val
+            self.warningPeriod = int(val)
 
     def asciiSpamCheck(self,msg,userLevel):
         nonAlnumCount=0

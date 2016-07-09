@@ -12,8 +12,11 @@ class MiLight(c.Command):
     def __init__(self,bot,name):
         super(MiLight,self).__init__(bot,name)
 
-        self.lightgroup=3
+        self.lightgroup=0
         self.lastState = "               "
+        self.lightcontrollerip = ''
+        self.lightcontrollerport = 8899
+        self.enabled = False
         
         if not self.bot.isCmdRegistered("!light"):
             self.bot.regCmd("!light",self)
@@ -30,10 +33,11 @@ class MiLight(c.Command):
         else:
             print("!swirl is already registered to ",self.bot.getCmdOwner("!swirl"))
 
-            
-        self.cont = milight.MiLight({'host':'192.168.1.10','port':8899},wait_duration=0)
-        self.light = milight.LightBulb(['rgbw'])
-        self.cont.send(self.light.on(self.lightgroup))
+        if self.lightgroup!=0 and len(self.lightcontrollerip)>0:    
+            self.cont = milight.MiLight({'host':self.lightcontrollerip,'port':self.lightcontrollerport},wait_duration=0)
+            self.light = milight.LightBulb(['rgbw'])
+            self.cont.send(self.light.on(self.lightgroup))
+            self.enabled = True
 
     def getState(self):
         tables = []
@@ -62,13 +66,31 @@ class MiLight(c.Command):
         
 
     def getParams(self):
-        params = []
+        params = [{'title':'LightGroup','desc':'Which MiLight light group to control','val':self.lightgroup}]
+        params.append({'title':'LightControllerIP','desc':'IP of MiLight Wifi controller','val':self.lightcontrollerip})
+        params.append({'title':'LightControllerPort','desc':'UDP Port of MiLight Wifi controller','val':self.lightcontrollerport})
+        
         return params
 
     def setParam(self, param, val):
-        pass
+        if param == 'LightGroup':
+            self.lightgroup = int(val)
+        if param == 'LightControllerIP':
+            self.lightcontrollerip = val
+        if param == 'LightControllerPort':
+            self.lightcontrollerport = val
+
+        if self.lightgroup!=0 and len(self.lightcontrollerip)>0:    
+            self.cont = milight.MiLight({'host':self.lightcontrollerip,'port':self.lightcontrollerport},wait_duration=0)
+            self.light = milight.LightBulb(['rgbw'])
+            self.enabled = True
+        else:
+            self.enabled = False
+            
     
     def shouldRespond(self, msg, userLevel):
+        if self.lightgroup==0 or len(self.lightcontrollerip)==0:
+            return False
         if msg.messageType == 'PRIVMSG' and len(msg.msg)!=0:
             splitMsg = msg.msg.split()
             if splitMsg[0]=='!light' and len(splitMsg)==4:

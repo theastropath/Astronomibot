@@ -182,15 +182,19 @@ class CustomCmds(c.Command):
 
     def setParam(self, param, val):
         if param == 'ModComLevel':
-            self.modComLevel = val
+            self.modComLevel = int(val)
 
     def getState(self):
+        tables = []
         state = []
+        defaults = []
+        defaults.append(("Command Name","Description", "User Level"))
+        defaults.append(("!addcom",'Add a command to Astronomibot.  Format: "!addcom [userLevel] [response]" ',userLevelToStr(self.modComLevel)))
+        defaults.append(("!editcom",'Edits an existing command in Astronomibot.  Format: "!editcom [userLevel] [response]" ',userLevelToStr(self.modComLevel)))
+        defaults.append(("!delcom",'Removes a command from Astronomibot.  Format: "!delcom [command]" ',userLevelToStr(self.modComLevel)))
+        defaults.append(("!list",'Returns a list of all custom commands in chat',userLevelToStr(self.modComLevel)))
+
         state.append(("Command Name","Description", "User Level", "Use Count"))
-        state.append(("!addcom",'Add a command to Astronomibot.  Format: "!addcom [userLevel] [response]" ',userLevelToStr(self.modComLevel),""))
-        state.append(("!editcom",'Edits an existing command in Astronomibot.  Format: "!editcom [userLevel] [response]" ',userLevelToStr(self.modComLevel),""))
-        state.append(("!delcom",'Removes a command from Astronomibot.  Format: "!delcom [command]" ',userLevelToStr(self.modComLevel),""))
-        state.append(("!list",'Returns a list of all custom commands in chat',userLevelToStr(self.modComLevel),""))
 
         allCmds = []
         for cmd in sorted(self.customCmds.keys()):
@@ -199,7 +203,10 @@ class CustomCmds(c.Command):
         for cmd in allCmds:
             state.append((cmd.command,cmd.response,userLevelToStr(cmd.userlevel),str(cmd.callcount)))
 
-        return [state]
+        tables.append(defaults)
+        tables.append(state)
+
+        return tables
 
     def getDescription(self, full=False):
         if full:
