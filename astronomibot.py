@@ -61,6 +61,9 @@ class Command:
     def setParam(self, param, val):
         pass
 
+    def paramsChanged(self):
+        return False
+
     def getState(Self):
         return None
 
@@ -88,6 +91,9 @@ class Feature:
 
     def setParam(self, param, val):
         pass
+
+    def paramsChanged(self):
+        return False
 
     def getState(self):
         return None
@@ -179,18 +185,23 @@ class Bot:
 
             #Load file, and get the corresponding class in it, then instantiate it
             c = imp.load_source('Command',commandsDir+os.sep+command+".py")
-            cmd = getattr(c,command)
-            
-            self.commands.append(cmd(self,command))
-            print("Loaded command module '"+command+"'")
+            try:
+                cmd = getattr(c,command)
+                self.commands.append(cmd(self,command))
+                print("Loaded command module '"+command+"'")
+            except:
+                print("Couldn't load command module '"+command+"'")
             
         for feature in featureFiles:
             #Load file, and get the corresponding class in it, then instantiate it
             f = imp.load_source('Feature',featuresDir+os.sep+feature+".py")
-            feat = getattr(f,feature)
-            
-            self.features.append(feat(self,feature))
-            print("Loaded feature module '"+feature+"'")
+            try:
+                feat = getattr(f,feature)
+                self.features.append(feat(self,feature))
+                print("Loaded feature module '"+feature+"'")
+            except:
+                print("Couldn't load feature module '"+feature+"'")
+
                 
     def getUserLevel(self,userName):
         if userName==channel[1:]:

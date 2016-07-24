@@ -25,7 +25,7 @@ class OutputConfig(c.Feature):
     def outputConfig(self,obj):
         if not os.path.exists(self.configDir+os.sep+self.bot.channel[1:]):
             os.makedirs(self.configDir+os.sep+self.bot.channel[1:])
-        if len(obj.getParams())>0:
+        if (len(obj.getParams())>0) and (obj.paramsChanged() or not os.path.isfile(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt))):
             f = open(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt),'w')
             for param in obj.getParams():
                 f.write(param['title']+" "+str(param['val'])+"\n")

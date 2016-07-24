@@ -17,6 +17,7 @@ class MiLight(c.Command):
         self.lightcontrollerip = ''
         self.lightcontrollerport = 8899
         self.enabled = False
+        self.paramsHaveChanged = False
         
         if not self.bot.isCmdRegistered("!light"):
             self.bot.regCmd("!light",self)
@@ -92,7 +93,11 @@ class MiLight(c.Command):
             self.enabled = True
         else:
             self.enabled = False
+
+        self.paramsHaveChanged = False
             
+    def paramsChanged(self):
+        return self.paramsHaveChanged
     
     def shouldRespond(self, msg, userLevel):
         if not self.enabled:
@@ -156,6 +161,7 @@ class MiLight(c.Command):
                     group = int(splitMsg[1])
                     if group>=1 and group <=4: 
                         self.lightgroup=group
+                        self.paramsHaveChanged = True
                         response = "Switched to MiLight light group "+str(group)
                     else:
                         response = "Invalid MiLight light group"

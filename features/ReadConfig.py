@@ -6,7 +6,7 @@ if __name__ == "__main__":
     
 c = imp.load_source('Command',baseFile)
 
-class InputConfig(c.Feature):
+class ReadConfig(c.Feature):
     configReadFreq = 60
     readTime = 1
     configExt = ".cfg"
