@@ -120,6 +120,7 @@ class GiveAway(c.Command):
                     if ("astronomibot" in eligible):
                         eligible.remove("astronomibot")
                     winner = random.choice(self.eligible)
+                    self.bot.addLogMessage("GiveAway: The winner is "+winner)
                     response = "Giveaway: The winner is "+winner+"!"
                 elif fullCmd[1] == "reset":
                     self.keyword = ""

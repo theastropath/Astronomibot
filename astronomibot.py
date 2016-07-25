@@ -1,4 +1,5 @@
 from time import sleep
+import time
 from socket import *
 import json
 from urllib.request import urlopen
@@ -119,12 +120,29 @@ class Bot:
     registeredCmds = []
     chatters = []
     regulars = []
-    
+    logs = []
+    logFile = "ActionLog.txt"
+
+    def importLogs(self):
+        if not os.path.exists(configDir+os.sep+channel[1:]):
+            os.makedirs(configDir+os.sep+channel[1:])
+
+        try:
+            f = open(configDir+os.sep+channel[1:]+os.sep+self.logFile,encoding='utf-8')
+            for line in f:
+                logmsg = line.strip()
+                self.logs.append((logmsg.split("$$$")[0],logmsg.split("$$$")[1]))
+            f.close()
+        except FileNotFoundError:
+            print ("Log file is not present")
+
+
     def __init__(self,channel):
         self.channel = channel
         self.regulars = []
         self.pollFreq = pollFreq
         self.name = nick
+        self.importLogs()
 
 
 
@@ -145,6 +163,25 @@ class Bot:
             if com[0] == cmd:
                 return True
         return False
+
+    def exportLogs(self):
+        f = open(configDir+os.sep+channel[1:]+os.sep+self.logFile,mode='w',encoding="utf-8")
+        for log in self.logs:
+            f.write(log[0]+"$$$"+log[1]+"\n")
+        f.close()
+
+
+
+    def addLogMessage(self,msg):
+        curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
+        self.logs.append((curTime,msg))
+        if len(self.logs)>50:
+            self.logs = self.logs[1:]
+        self.exportLogs()
+        
+
+    def getLogs(self):
+        return self.logs
 
     def regCmd(self,cmd,source):
         self.registeredCmds.append((cmd,source))

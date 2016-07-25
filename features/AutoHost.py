@@ -148,12 +148,14 @@ class AutoHost(c.Feature):
         self.hostTime = 0
         self.hostChannel=hostChannel
         self.hosting = True
+        self.bot.addLogMessage("AutoHost: Now hosting "+hostChannel)
         self.sendMessage("/host "+hostChannel,sock)
 
     def stopHosting(self,sock):
         self.hostTime = 0
         self.hostChannel=""
         self.hosting = False
+        self.bot.addLogMessage("AutoHost: No longer hosting")
         self.sendMessage("/unhost",sock)
         
         

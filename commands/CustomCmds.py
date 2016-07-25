@@ -121,6 +121,7 @@ class CustomCmds(c.Command):
             self.customCmds[newCmd]=CustomCommand(newCmd,cmdResp,userLevel)
             self.bot.regCmd(newCmd,self)
             self.exportCommands()
+            self.bot.addLogMessage("CustomCmds: Added command "+newCmd)
             return "Adding "+newCmd+" which will respond with '"+cmdResp+"'"
 
     def editCustomCommand(self,command):
@@ -160,6 +161,7 @@ class CustomCmds(c.Command):
             if userLevelChanged:
                 self.customCmds[newCmd].userlevel = userLevel
             self.exportCommands()
+            self.bot.addLogMessage("CustomCmds: Edited command "+newCmd)
             return "Editing "+newCmd+" which will now respond with '"+cmdResp+"'"    
         elif len(newCmd)==1:
             return "No command name given!"
@@ -176,6 +178,7 @@ class CustomCmds(c.Command):
                 del self.customCmds[cmd]
                 self.bot.unregCmd(cmd)
                 self.exportCommands()
+                self.bot.addLogMessage("CustomCmds: Deleted command "+cmd)
                 return "Command "+cmd+" has been deleted"
             else:
                 return "Command "+cmd+" is not present"
@@ -195,6 +198,7 @@ class CustomCmds(c.Command):
         if cmd[0]=="!":
             if cmd in self.customCmds.keys():
                 self.customCmds[cmd].callcount=newCount
+                self.bot.addLogMessage("CustomCmds: Reset count on "+cmd)
                 return "Command "+cmd+" call count has been reset to "+str(newCount)
             else:
                 return "command "+cmd+" does not exist"

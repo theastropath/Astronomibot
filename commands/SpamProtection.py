@@ -145,6 +145,7 @@ class SpamProtection(c.Command):
             if offender.wasWarned(self.warningPeriod):
                 offender.timeOut()
                 timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
+                self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
                 response = response + " ("+str(timeoutLength)+" second time out)"
                 toMsg = "PRIVMSG "+channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
                 sock.sendall(toMsg.encode('utf-8'))

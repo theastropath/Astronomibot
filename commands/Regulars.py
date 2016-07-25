@@ -96,6 +96,8 @@ class Regulars(c.Command):
                     #print("Trying to add "+reg+" to regs")
                     changed = True
                     changelist.append(reg)
+                    self.bot.addLogMessage("Regulars: Adding "+reg+" as a regular")
+
                     self.bot.regulars.append(reg.lower())
         elif splitMsg[0] == '!delreg':
             for reg in splitMsg[1:]:
@@ -106,6 +108,8 @@ class Regulars(c.Command):
                     #print("Removing "+reg+" from regs")
                     changed = True
                     changelist.append(reg)
+                    self.bot.addLogMessage("Regulars: Removing "+reg+" from the regular")
+
                     self.bot.regulars.remove(reg.lower())
             
 
