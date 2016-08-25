@@ -1,5 +1,6 @@
 import imp
 from ftplib import FTP
+import ftplib
 import os
 from datetime import datetime
 import time
@@ -90,10 +91,10 @@ class WebsiteOutput(c.Feature):
                 for file in os.listdir(self.outputLocation+os.sep+self.bot.channel[1:]):
                     filepath = self.outputLocation+os.sep+self.bot.channel[1:]+os.sep+file
                     f = open(filepath,'rb')
-                    ftp.storlines("STOR "+file,f)
+                    ftp.storbinary("STOR "+file,f)
                 ftp.close()
-            except:
-                print("Encountered an error trying to deal with the FTP connection")
+            except ftplib.all_errors as e:
+                print("Encountered an error trying to deal with the FTP connection: "+str(e))
                 if ftp is not None:
                     ftp.close()
             

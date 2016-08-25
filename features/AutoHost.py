@@ -15,6 +15,7 @@ class AutoHost(c.Feature):
     
     hostUpdate = 1
     hostTime = 0
+    offlineTime = 0
     hosting = False
     hostList = []
     clientId = "dcfmdbai5hfr5w3bwjlpndhd5tf2pty"
@@ -170,8 +171,16 @@ class AutoHost(c.Feature):
             self.hostUpdate = self.hostCheckFrequency
 
             if not self.isStreamOnline(self.bot.channel[1:]):
-                #Stream is offline.
+                #Stream must be offline for several checks in a row
+                #(To prevent an occasional lookup failure from hosting during a stream)
+                self.offlineTime += 1
 
+                if self.offlineTime < 3:
+                    return
+                else:
+                    self.offlineTime = 3 #Prevent it from rolling over during long periods of offline
+                
+                #Stream is offline.
                 if self.hosting:
                     #Make sure we are still hosting a channel
                     #If not, mark us as not hosting
@@ -183,6 +192,7 @@ class AutoHost(c.Feature):
                         else:
                             self.hostTime += 1
 
+
                 #Check for channels in host list that are online
                 if not self.hosting or checkForNewHost:
                     for channel in self.hostList:
@@ -192,6 +202,7 @@ class AutoHost(c.Feature):
                                 return
                             else: #If we're past the host time, we'll check to see if there is a different stream to host
                                 if channel != self.hostChannel:
+                                    print ("We were hosting "+self.hostChannel+" now hosting "+channel)
                                     self.startHosting(channel,sock)
                                     return
                                 elif channel == self.hostChannel:
@@ -203,6 +214,7 @@ class AutoHost(c.Feature):
                     #send unhost message
                     self.stopHosting(sock)
                 self.hosting = False
+                self.offlineTime = 0
             
 
         

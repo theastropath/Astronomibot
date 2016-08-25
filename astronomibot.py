@@ -175,7 +175,7 @@ class Bot:
     def addLogMessage(self,msg):
         curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
         self.logs.append((curTime,msg))
-        if len(self.logs)>50:
+        if len(self.logs)>20:
             self.logs = self.logs[1:]
         self.exportLogs()
         
