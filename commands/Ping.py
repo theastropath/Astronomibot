@@ -19,6 +19,7 @@ class Ping(c.Command):
 
     def respond(self,msg,sock):
         #print ("Responding to PING")
+        #self.bot.addLogMessage("Ping: Connection to Twitch still alive")
         sock.sendall(b"PONG "+msg.msg.encode('utf-8')+b"\n")
         return ""
         

@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 import sys
 import imp
+import traceback
 
 twitchIrcServer = "irc.twitch.tv"
 twitchIrcPort = 6667
@@ -410,6 +411,10 @@ if __name__ == "__main__":
         except ConnectionResetError:
             print ("Connection got forced closed.  Reconnecting")
             sock = connectToServer()
+        except Exception as e:
+            print ("Encountered exception '"+str(e.__class__.__name__)+"' while reading")
+            sock = connectToServer()
+
 
         if message is not "":
             messages = message.decode().rstrip().split("\n")
@@ -421,19 +426,34 @@ if __name__ == "__main__":
                     
                 for command in bot.getCommands():
                     if command.shouldRespond(msg,bot.getUserLevel(msg.sender)):
-                        response = command.respond(msg,sock)
+                        try:
+                            response = command.respond(msg,sock)
+                        except BrokenPipeError:
+                            print ("Broken pipe while responding to command.  Reconnecting")
+                            sock = connectToServer()
+                        except Exception as e:
+                            print ("Encountered exception '"+str(e.__class__.__name__)+"' while handling command "+str(command.name)+" handling message '"+str(msg.msg)+"'")
+                            traceback.print_exc()
+                            sock = connectToServer()
+                            
                         if len(response)>0:
                             logMessage(nick,response)
-                """
-                if msg.messageType == 'PING':
-                    sock.sendall(b"PONG "+msg.msg.encode('utf-8')+b"\n")
-                """
+
                 if msg.messageType == 'NOTICE':
                     handleNoticeMessage(msg)
 
                     
         for feature in bot.getFeatures():
-            feature.handleFeature(sock)
+            try:
+                feature.handleFeature(sock)
+            except BrokenPipeError:
+                print ("Broken pipe while handling feature.  Reconnecting")
+                sock = connectToServer()
+            except Exception as e:
+                print ("Encountered exception '"+str(e.__class__.__name__)+"' while handling feature "+str(feature.name))
+                traceback.print_exc()
+                sock = connectToServer()
+
             
 
         

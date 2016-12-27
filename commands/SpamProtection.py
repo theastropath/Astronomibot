@@ -2,7 +2,7 @@ import imp
 import json
 import re
 from urllib.request import urlopen
-from time import time
+import time
 
 baseFile = "astronomibot.py"
 if __name__ == "__main__":
@@ -31,14 +31,14 @@ url_re = re.compile(url, re.VERBOSE | re.MULTILINE)
 class SpamOffender():
 
     def warn(self):
-        self.time = time()
+        self.time = time.time()
 
     def timeOut(self):
-        self.time = time()
+        self.time = time.time()
         self.numTimeouts += 1
 
     def wasWarned(self,period):
-        return time()-self.time < period
+        return time.time()-self.time < period
 
     def getNumTimeouts(self):
         return self.numTimeouts
@@ -51,7 +51,7 @@ class SpamOffender():
     
     def __init__(self,name):
         self.name = name
-        self.time = time()
+        self.time = time.time()
         self.numTimeouts = 0
         
 
