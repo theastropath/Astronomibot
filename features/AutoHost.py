@@ -18,7 +18,6 @@ class AutoHost(c.Feature):
     offlineTime = 0
     hosting = False
     hostList = []
-    clientId = "dcfmdbai5hfr5w3bwjlpndhd5tf2pty"
     hostListFile = "AutoHostList.txt"
 
     def __init__(self,bot,name):
@@ -71,7 +70,7 @@ class AutoHost(c.Feature):
 
     def isStreamOnline(self,channelName):
         req = urllib.request.Request("https://api.twitch.tv/kraken/streams/"+channelName)
-        req.add_header('Client-ID',self.clientId)
+        req.add_header('Client-ID',self.bot.clientId)
         try:
             response = urllib.request.urlopen(req)
             stream = response.read().decode()
@@ -87,7 +86,7 @@ class AutoHost(c.Feature):
         if self.channelId==0:
             #Gotta get the channel ID first...
             req = urllib.request.Request("https://api.twitch.tv/kraken/channels/"+channelName)
-            req.add_header('Client-ID',self.clientId)
+            req.add_header('Client-ID',self.bot.clientId)
             try:
                 response = urllib.request.urlopen(req)
                 channels = response.read().decode()
@@ -116,7 +115,7 @@ class AutoHost(c.Feature):
         if self.channelId==0:
             #Gotta get the channel ID first...
             req = urllib.request.Request("https://api.twitch.tv/kraken/channels/"+channelName)
-            req.add_header('Client-ID',self.clientId)
+            req.add_header('Client-ID',self.bot.clientId)
             try:
                 response = urllib.request.urlopen(req)
                 channels = response.read().decode()

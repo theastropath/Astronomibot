@@ -20,6 +20,7 @@ configDir = "config"
 
 nick=""
 passw=""
+clientId=""
 
 pollFreq=0.5
 
@@ -124,6 +125,7 @@ class Bot:
     regulars = []
     logs = []
     logFile = "ActionLog.txt"
+    clientId = ""
 
     def importLogs(self):
         if not os.path.exists(configDir+os.sep+channel[1:]):
@@ -139,11 +141,12 @@ class Bot:
             print ("Log file is not present")
 
 
-    def __init__(self,channel):
+    def __init__(self,channel,clientid):
         self.channel = channel
         self.regulars = []
         self.pollFreq = pollFreq
         self.name = nick
+        self.clientId = clientid
         self.importLogs()
 
 
@@ -388,13 +391,14 @@ if __name__ == "__main__":
         f = open(credFile)
         nick = f.readline().strip('\n')
         passw = f.readline().strip('\n')
+        clientId = f.readline().strip('\n')
         f.close()
     except FileNotFoundError:
         print(credFile+" is missing!  Please create this file in your working directory.  First line should be the username for the bot, second line should be the oauth password for it!")
         exit(1)
 
     sock = connectToServer()
-    bot = Bot(channel)
+    bot = Bot(channel,clientId)
 
     while(running):
         message = ""
