@@ -11,7 +11,8 @@ class CustomCommand:
     response = ""
     userlevel = EVERYONE
 
-    def __init__(self,command,response,callcount=0,userlevel=EVERYONE):
+    def __init__(self,allCmds,command,response,callcount=0,userlevel=EVERYONE):
+        self.allCmds = allCmds
         self.command = command
         self.response = response
         self.userlevel=userlevel
@@ -20,12 +21,30 @@ class CustomCommand:
     def canUseCommand(self,userlevel):
         return userlevel>=self.userlevel
 
+    def handleVariables(self,afterCmd):
+        response = self.response
+        response = response.replace(replaceTerm,afterCmd)
+        response = response.replace(countTerm,str(self.callcount))
+
+        while referenceCountTerm in response:
+            refReplaceTerm=""
+            refReplaceTerm=response.split(referenceCountTerm+"(")[1].split(")")[0]
+            refCount=0
+            if refReplaceTerm in self.allCmds.customCmds.keys():
+                    refCount = self.allCmds.customCmds[refReplaceTerm].callcount
+            refReplaceTerm=referenceCountTerm+"("+refReplaceTerm+")"
+            response = response.replace(refReplaceTerm,str(refCount))
+
+        return response
+
     def getResponse(self,msg):
         self.callcount+=1
         afterCmd = " ".join(msg.msg.split()[1:]).rstrip()
         if len(afterCmd)>0 and afterCmd[0]=="/":
             afterCmd = ""
-        return self.response.replace(replaceTerm,afterCmd).replace(countTerm,str(self.callcount))
+
+        return self.handleVariables(afterCmd)                     
+        #return self.response.replace(replaceTerm,afterCmd).replace(countTerm,str(self.callcount))
     
     def __eq__(self,key):
         return key == self.command
@@ -68,7 +87,7 @@ class CustomCmds(c.Command):
                     
                 if not self.bot.isCmdRegistered(command):
                     self.bot.regCmd(command,self)
-                    self.customCmds[command]=CustomCommand(command,response,callcount,userLvl)
+                    self.customCmds[command]=CustomCommand(self,command,response,callcount,userLvl)
                 else:
                     print(command,"is already registered to ",self.bot.getCmdOwner(command))
 
@@ -118,7 +137,7 @@ class CustomCmds(c.Command):
         elif len(newCmd)==1:
             return "No command name given!"
         else:
-            self.customCmds[newCmd]=CustomCommand(newCmd,cmdResp,userLevel)
+            self.customCmds[newCmd]=CustomCommand(self,newCmd,cmdResp,userLevel)
             self.bot.regCmd(newCmd,self)
             self.exportCommands()
             self.bot.addLogMessage("CustomCmds: Added command "+newCmd)
@@ -242,7 +261,7 @@ class CustomCmds(c.Command):
 
     def getDescription(self, full=False):
         if full:
-            return "A module that allows users to create their own commands.  \n$REPLACE will be replaced with anything after the command name.\n$COUNT will be replaced with the number of times the command has been used"
+            return "A module that allows users to create their own commands.  \n$REPLACE will be replaced with anything after the command name.\n$COUNT will be replaced with the number of times the command has been used\n$REF(!cmd) will be replaced with the number of times !cmd has been used"
         else:
             return "User-defined commands"
     

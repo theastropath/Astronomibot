@@ -32,6 +32,7 @@ BROADCASTER=4
 
 replaceTerm="$REPLACE"
 countTerm="$COUNT"
+referenceCountTerm="$REF"
 
 running = True
 
