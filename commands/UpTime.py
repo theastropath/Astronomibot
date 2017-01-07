@@ -69,6 +69,36 @@ class UpTime(c.Command):
             pass
         
         return self.lastKnownUptime
+    
+    def getState(self):
+        tables = []
+
+        live = "No"
+        if self.isStreamOnline(self.bot.channel[1:]):
+            live = "Yes"
+
+        state=[]
+        state.append(("",""))
+        state.append(("Channel Live?",live))
+        if live == "Yes":
+            state.append(("Live for",self.getStreamLiveTime(self.bot.channel[1:])))
+        state.append(("",""))
+
+        cmds = []
+        cmds.append(("Command","Description"))
+        cmds.append(("!uptime","Returns how long the channel has been live"))
+
+        tables.append(state)
+        tables.append(cmds)
+
+        return tables
+    
+    def getDescription(self, full=False):
+        if full:
+            return "Users can get the amount of time that the channel has been live"
+        else:
+            return "Get the channels uptime!"
+
 
     def respond(self,msg,sock):
         response = ""
