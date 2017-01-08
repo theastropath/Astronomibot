@@ -18,7 +18,24 @@ class ChannelManagement(c.Command):
             self.bot.regCmd("!settitle",self)
         else:
             print("!settitle is already registered to ",self.bot.getCmdOwner("!settitle"))
+            
+    def getDescription(self, full=False):
+        if full:
+            return "Moderators can manage the stream title and the game that the channel is listed under"
+        else:
+            return "Adjust the stream title and game"
 
+    def getState(self):
+        tables = []
+
+        cmds = []
+        cmds.append(("Command","Description","Example"))
+        cmds.append(("!settitle &lt;title&gt;","Sets the stream title to 'title'","!settitle This is a stream about games!"))
+        cmds.append(("!setgame &lt;game&gt;","Sets the stream game to 'game'","!setgame Deus Ex"))
+
+        tables.append(cmds)
+
+        return tables
 
     def getParams(self):
         params = []

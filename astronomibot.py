@@ -394,15 +394,10 @@ if __name__ == "__main__":
     try:
         f = open(credFile)
         nick = f.readline().strip('\n')
-        print("Nick: "+nick)
         passw = f.readline().strip('\n')
-        print("Pass: "+passw)
         clientId = f.readline().strip('\n')
-        print("ID: "+clientId)
         clientSecret = f.readline().strip('\n')
-        print("Secret: "+clientSecret)
         accessToken = f.readline().strip('\n')
-        print("AccessToken: "+accessToken)
         f.close()
     except FileNotFoundError:
         print(credFile+" is missing!  Please create this file in your working directory.  First line should be the username for the bot, second line should be the oauth password for it!")
