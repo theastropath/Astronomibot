@@ -44,7 +44,6 @@ class CustomCommand:
             afterCmd = ""
 
         return self.handleVariables(afterCmd)                     
-        #return self.response.replace(replaceTerm,afterCmd).replace(countTerm,str(self.callcount))
     
     def __eq__(self,key):
         return key == self.command
