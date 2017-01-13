@@ -17,3 +17,8 @@ Navigate to:
 https://api.twitch.tv/kraken/oauth2/authorize?response_type=token&client_id=<Application Client ID>&redirect_uri=localhost&scope=channel_editor
 Log in, and you'll be sent to an localhost address that will look like this, containing your access token:
 http://localhost/#access_token=<Access Token>&scope=channel_editor
+
+Dependencies:
+-------------
+ * milight
+ * webcolors
