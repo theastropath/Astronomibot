@@ -1,12 +1,7 @@
-import imp
 import os
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
+from ..feature import Feature
 
-c = imp.load_source('Command',baseFile)
-
-class OutputConfig(c.Feature):
+class OutputConfig(Feature):
     def __init__(self,bot,name):
         super(OutputConfig, self).__init__(bot,name)
         self.configOutputFreq = 60

@@ -1,15 +1,9 @@
-import imp
 from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
 import json
+from ..feature import Feature
 
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-
-c = imp.load_source('Command',baseFile)
-
-class ChatterList(c.Feature):
+class ChatterList(Feature):
     def __init__(self,bot,name):
         super(ChatterList,self).__init__(bot,name)
         self.chatListFreq = 120

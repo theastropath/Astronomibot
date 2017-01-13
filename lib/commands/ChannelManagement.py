@@ -1,12 +1,10 @@
-import imp
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-    
-c = imp.load_source('Command',baseFile)
+from ..command import Command
+from .. import MOD
 
-class ChannelManagement(c.Command):
-    
+import json
+
+class ChannelManagement(Command):
+
     def __init__(self,bot,name):
         super(ChannelManagement,self).__init__(bot,name)
         if not self.bot.isCmdRegistered("!setgame"):
@@ -18,7 +16,7 @@ class ChannelManagement(c.Command):
             self.bot.regCmd("!settitle",self)
         else:
             print("!settitle is already registered to ",self.bot.getCmdOwner("!settitle"))
-            
+
     def getDescription(self, full=False):
         if full:
             return "Moderators can manage the stream title and the game that the channel is listed under"
@@ -45,8 +43,8 @@ class ChannelManagement(c.Command):
         pass
 
     def setGame(self,game):
-        DATA = b'{"channel": {"game": "' +str.encode(game)+ b'"}}'
-        req = urllib.request.Request(url="https://api.twitch.tv/kraken/channels/"+"72962886", data=DATA,method='PUT')
+        DATA = json.dumps({"channel": {"game": game}}).encode("utf-8")
+        req = urllib.request.Request(url="https://api.twitch.tv/kraken/channels/72962886", data=DATA, method='PUT')
         req.add_header('Client-ID',self.bot.clientId)
         req.add_header('Accept',"application/vnd.twitchtv.v5+json")
         req.add_header('Authorization',"OAuth "+self.bot.accessToken)
@@ -62,8 +60,8 @@ class ChannelManagement(c.Command):
         return False
 
     def setTitle(self,title):
-        DATA = b'{"channel": {"status": "' +str.encode(title)+ b'"}}'
-        req = urllib.request.Request(url="https://api.twitch.tv/kraken/channels/"+"72962886", data=DATA,method='PUT')
+        DATA = json.dumps({"channel": {"status": title}}).encode("utf-8")
+        req = urllib.request.Request(url="https://api.twitch.tv/kraken/channels/72962886", data=DATA,method='PUT')
         req.add_header('Client-ID',self.bot.clientId)
         req.add_header('Accept',"application/vnd.twitchtv.v5+json")
         req.add_header('Authorization',"OAuth "+self.bot.accessToken)
@@ -78,7 +76,7 @@ class ChannelManagement(c.Command):
             print (e.read())
         return False
 
-    
+
     def shouldRespond(self, msg, userLevel):
         if msg.messageType == 'PRIVMSG' and len(msg.msg)!=0 and userLevel>=MOD:
             fullmsg = msg.msg.split()
@@ -105,9 +103,8 @@ class ChannelManagement(c.Command):
             else:
                 textResponse = "Failed to change stream title"
 
-        
+
         response = "PRIVMSG "+self.bot.channel+" : "+textResponse+"\n"
         sock.sendall(response.encode('utf-8'))
 
         return textResponse
-        

@@ -11,13 +11,15 @@ import sys
 import imp
 import traceback
 
+from lib import EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr
+
 twitchIrcServer = "irc.twitch.tv"
 twitchIrcPort = 6667
 credFile = "creds.txt"
 channel = "#theastropath" #Channel name has to be all lowercase
 logDir = "logs"
-commandsDir = "commands"
-featuresDir = "features"
+commandsDir = os.path.join("lib", "commands")
+featuresDir = os.path.join("lib", "features")
 configDir = "config"
 
 nick=""
@@ -30,11 +32,6 @@ pollFreq=0.5
 
 recvAmount=4096
 
-EVERYONE=1
-REGULAR = 2
-MOD=3
-BROADCASTER=4
-
 replaceTerm="$REPLACE"
 countTerm="$COUNT"
 referenceCountTerm="$REF"
@@ -45,87 +42,17 @@ running = True
 #commands = []
 #features = []
 
-#############################################################################################################
-# These two classes define the API for interacting with "commands" and "features"
-# Implementations of these classes must be made in an individual .py file in the command
-# or feature folder, and the implemented class must have the same name as the file
-#############################################################################################################
-
-class Command:
-
-    #This function will take a msg and respond if this "command" should respond (True or False)
-    def shouldRespond(self, msg, userLevel):
-        raise NotImplementedError()
-
-    #This function will actually respond to the message
-    def respond(self,msg,sock):
-        raise NotImplementedError()
-
-    def getParams(self):
-        params = []
-        return params
-
-    def setParam(self, param, val):
-        pass
-
-    def paramsChanged(self):
-        return False
-
-    def getState(Self):
-        return None
-
-    def getDescription(self,full=False):
-        return "A generic undescribed Command"
-
-    #Equals is used for checking if the name is in the command list
-    def __eq__(self,key):
-        return key == self.name
-
-    def __init__(self,bot,name):
-        self.name = name
-        self.bot = bot
-
-class Feature:
-
-    #This function will go off and do whatever this feature is supposed to do
-    def handleFeature(self,sock):
-        raise NotImplementedError()
-
-    def getParams(self):
-        params = []
-        return params
-
-    def setParam(self, param, val):
-        pass
-
-    def paramsChanged(self):
-        return False
-
-    def getState(self):
-        return None
-
-    def getDescription(self,full=False):
-        return "A generic undescribed Feature"
-
-    #Equals is used for checking if the name is in the feature list
-    def __eq__(self,key):
-        return key == self.name
-
-    def __init__(self,bot,name):
-        self.name = name
-        self.bot = bot
-
 
 ###############################################################################################################
 
 class Bot:
 
     def importLogs(self):
-        if not os.path.exists(configDir+os.sep+channel[1:]):
-            os.makedirs(configDir+os.sep+channel[1:])
+        if not os.path.exists(configDir+os.sep+self.channel[1:]):
+            os.makedirs(configDir+os.sep+self.channel[1:])
 
         try:
-            with open(configDir+os.sep+channel[1:]+os.sep+self.logFile,encoding='utf-8') as f:
+            with open(configDir+os.sep+self.channel[1:]+os.sep+self.logFile,encoding='utf-8') as f:
                 for line in f:
                     logmsg = line.strip()
                     self.logs.append((logmsg.split("$$$")[0],logmsg.split("$$$")[1]))
@@ -171,7 +98,7 @@ class Bot:
         return False
 
     def exportLogs(self):
-        with open(configDir+os.sep+channel[1:]+os.sep+self.logFile,mode='w',encoding="utf-8") as f:
+        with open(configDir+os.sep+self.channel[1:]+os.sep+self.logFile,mode='w',encoding="utf-8") as f:
             for log in self.logs:
                 f.write(log[0]+"$$$"+log[1]+"\n")
 
@@ -214,19 +141,21 @@ class Bot:
         commandFiles = []
         for command in os.listdir(commandsDir):
             commandName = command[:-3]
-            if ".py" in command[-3:] and commandName not in self.commands:
+            if ".py" == command[-3:] and commandName not in self.commands and commandName != '__init__':
                 commandFiles.append(commandName)
 
         featureFiles = []
         for feature in os.listdir(featuresDir):
             featureName = feature[:-3]
-            if ".py" in feature[-3:] and featureName not in self.features:
+            if ".py" == feature[-3:] and featureName not in self.features and featureName != '__init__':
                 featureFiles.append(featureName)
 
+        imp.load_source('lib.commands', os.path.join(commandsDir, '__init__.py'))
+        imp.load_source('lib.features', os.path.join(featuresDir, '__init__.py'))
         for command in commandFiles:
 
             #Load file, and get the corresponding class in it, then instantiate it
-            c = imp.load_source('Command',commandsDir+os.sep+command+".py")
+            c = imp.load_source('lib.commands.'+command,commandsDir+os.sep+command+".py")
             try:
                 cmd = getattr(c,command)
                 self.commands.append(cmd(self,command))
@@ -236,7 +165,7 @@ class Bot:
 
         for feature in featureFiles:
             #Load file, and get the corresponding class in it, then instantiate it
-            f = imp.load_source('Feature',featuresDir+os.sep+feature+".py")
+            f = imp.load_source('lib.features.'+feature,featuresDir+os.sep+feature+".py")
             try:
                 feat = getattr(f,feature)
                 self.features.append(feat(self,feature))
@@ -246,7 +175,7 @@ class Bot:
 
 
     def getUserLevel(self,userName):
-        if userName==channel[1:]:
+        if userName==self.channel[1:]:
             #print(userName+" identified as broadcaster!")
             return BROADCASTER
         elif userName in self.modList:
@@ -292,18 +221,6 @@ class IrcMessage:
         if not self.msg:
             self.messageType = 'INVALID'
 
-
-def userLevelToStr(userLevel):
-    if userLevel == EVERYONE:
-        return "Everyone"
-    elif userLevel == REGULAR:
-        return "Regular Viewer"
-    elif userLevel == MOD:
-        return "Moderator"
-    elif userLevel == BROADCASTER:
-        return "Broadcaster"
-    else:
-        return "???"
 
 
 

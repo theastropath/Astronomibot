@@ -1,19 +1,12 @@
-import imp
 from ftplib import FTP
 import ftplib
 import os
 from datetime import datetime
 import time
-
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-
-c = imp.load_source('Command',baseFile)
-
+from ..feature import Feature
 ftpCredFile = "ftpcreds.txt"
 
-class WebsiteOutput(c.Feature):
+class WebsiteOutput(Feature):
     def startHtmlFile(self,title,background="000000"):
         response = '<!DOCTYPE html><html><head>'
         response+= '<style>table, th, td { border: 1px solid black; }</style>'

@@ -1,8 +1,5 @@
-import imp
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-c = imp.load_source('Command',baseFile)
+from ..command import Command
+from .. import EVERYONE, MOD, REGULAR, BROADCASTER, userLevelToStr
 
 cmdFile = "cmds.txt"
 
@@ -54,16 +51,16 @@ class CustomCommand:
 
 
 
-class CustomCmds(c.Command):
+class CustomCmds(Command):
 
     def exportCommands(self):
-        commands = channel[1:]+cmdFile
+        commands = self.bot.channel[1:]+cmdFile
         with open(commands,mode='w',encoding="utf-8") as f:
             for cmd in self.customCmds.keys():
                 f.write(self.customCmds[cmd].exportCommand())
 
     def importCommands(self):
-        commands = channel[1:]+cmdFile
+        commands = self.bot.channel[1:]+cmdFile
         try:
             with open(commands,encoding="utf-8") as f:
                 for line in f:
@@ -280,22 +277,22 @@ class CustomCmds(c.Command):
         if command == "!addcom":
             newCmd = " ".join(msg.msg.split()[1:])
             response = self.addCustomCommand(newCmd)
-            response = "PRIVMSG "+channel+" :"+response+"\n"
+            response = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
             sock.sendall(response.encode('utf-8'))
         elif command == "!editcom":
             newCmd = " ".join(msg.msg.split()[1:])
             response = self.editCustomCommand(newCmd)
-            response = "PRIVMSG "+channel+" :"+response+"\n"
+            response = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
             sock.sendall(response.encode('utf-8'))
         elif command == "!delcom":
             newCmd = " ".join(msg.msg.split()[1:])
             response = self.delCustomCommand(newCmd)
-            response = "PRIVMSG "+channel+" :"+response+"\n"
+            response = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
             sock.sendall(response.encode('utf-8'))
         elif command == "!resetcount":
             newCmd = " ".join(msg.msg.split()[1:])
             response = self.resetCustomCommandCount(newCmd)
-            response = "PRIVMSG "+channel+" :"+response+"\n"
+            response = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
             sock.sendall(response.encode('utf-8'))
 
         elif command == "!list":
@@ -312,14 +309,14 @@ class CustomCmds(c.Command):
                 numCmds+=1
                 if numCmds == 30: #30 commands per list message
                     cmdmsg = ", ".join(cmds)
-                    sockMsg = "PRIVMSG "+channel+" :"+cmdmsg+"\n"
+                    sockMsg = "PRIVMSG "+self.bot.channel+" :"+cmdmsg+"\n"
                     sock.sendall(sockMsg.encode('utf-8'))
                     cmds = []
                     numCmds = 0
 
             if len(cmds) != 0:
                 cmdmsg = ", ".join(cmds)
-                sockMsg = "PRIVMSG "+channel+" :"+cmdmsg+"\n"
+                sockMsg = "PRIVMSG "+self.bot.channel+" :"+cmdmsg+"\n"
                 sock.sendall(sockMsg.encode('utf-8'))
                 cmds = []
                 numCmds = 0
@@ -330,7 +327,7 @@ class CustomCmds(c.Command):
         else:
             if self.customCmds[command]:
                 response = self.customCmds[command].getResponse(msg)
-                response = "PRIVMSG "+channel+" :"+response+"\n"
+                response = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
                 sock.sendall(response.encode('utf-8'))
 
         #Now strip the IRC formatting off again so that we can log the response

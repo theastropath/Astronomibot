@@ -1,11 +1,6 @@
-import imp
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
+from ..feature import Feature
 
-c = imp.load_source('Command',baseFile)
-
-class ModListUpdate(c.Feature):
+class ModListUpdate(Feature):
 
     def __init__(self,bot,name):
         super(ModListUpdate,self).__init__(bot,name)

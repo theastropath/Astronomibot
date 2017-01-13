@@ -1,12 +1,7 @@
-import imp
 import os
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
+from ..feature import Feature
 
-c = imp.load_source('Command',baseFile)
-
-class ReadConfig(c.Feature):
+class ReadConfig(Feature):
     def __init__(self,bot,name):
         super(ReadConfig, self).__init__(bot,name)
         self.configReadFreq = 60
@@ -30,8 +25,8 @@ class ReadConfig(c.Feature):
                 try:
                     with open(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt),'r') as f:
                         for line in f:
-                            param = line.strip().split()
-                            obj.setParam(param[0],str(param[1]))
+                            param, val = line.strip().split(None, 1)
+                            obj.setParam(param, val)
                 except FileNotFoundError:
                     pass
 

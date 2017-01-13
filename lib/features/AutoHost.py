@@ -1,15 +1,11 @@
-import imp
 import urllib
 import json
+import os
+from ..feature import Feature
 
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-
-c = imp.load_source('Command',baseFile)
 configDir = "config"
 
-class AutoHost(c.Feature):
+class AutoHost(Feature):
 
     def __init__(self,bot,name):
         super(AutoHost,self).__init__(bot,name)
@@ -25,7 +21,7 @@ class AutoHost(c.Feature):
 
         self.channelId=0
         self.hostChannel = ""
-        self.hosting =  elf.currentlyHosting(self.bot.channel[1:])
+        self.hosting =  self.currentlyHosting(self.bot.channel[1:])
 
         if self.hosting:
             self.hostChannel = self.currentHostedChannel(self.bot.channel[1:])

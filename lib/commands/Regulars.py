@@ -1,14 +1,11 @@
-import imp
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-
-c = imp.load_source('Command',baseFile)
+import os
+from ..command import Command
+from .. import MOD
 
 configDir = "config"
 regFile = "regulars.txt"
 
-class Regulars(c.Command):
+class Regulars(Command):
 
     def __init__(self,bot,name):
         super(Regulars,self).__init__(bot,name)
@@ -25,11 +22,11 @@ class Regulars(c.Command):
             print("!delreg is already registered to ",self.bot.getCmdOwner("!delreg"))
 
         #Load regulars
-        if not os.path.exists(configDir+os.sep+channel[1:]):
-            os.makedirs(configDir+os.sep+channel[1:])
+        if not os.path.exists(configDir+os.sep+self.bot.channel[1:]):
+            os.makedirs(configDir+os.sep+self.bot.channel[1:])
 
         try:
-            with open(configDir+os.sep+channel[1:]+os.sep+regFile,encoding='utf-8') as f:
+            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+regFile,encoding='utf-8') as f:
                 for line in f:
                     reg = line.strip()
                     self.bot.regulars.append(reg)
@@ -114,8 +111,8 @@ class Regulars(c.Command):
 
         #Save the new list of regulars
         if changed:
-            commands = channel[1:]+cmdFile
-            with open(configDir+os.sep+channel[1:]+os.sep+regFile,mode='w',encoding="utf-8") as f:
+            commands = self.bot.channel[1:]+cmdFile
+            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+regFile,mode='w',encoding="utf-8") as f:
                 for reg in self.bot.regulars:
                     f.write(reg.lower()+"\n")
 
@@ -150,7 +147,7 @@ class Regulars(c.Command):
             response+="the regulars list.  "
 
 
-        ircResponse = "PRIVMSG "+channel+" :"+response+"\n"
+        ircResponse = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
         sock.sendall(ircResponse.encode('utf-8'))
 
         return response

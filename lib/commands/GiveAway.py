@@ -1,12 +1,8 @@
-import imp
 import random
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
+from ..command import Command
+from .. import MOD
 
-c = imp.load_source('Command',baseFile)
-
-class GiveAway(c.Command):
+class GiveAway(Command):
 
     def getParams(self):
         params = []

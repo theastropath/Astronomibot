@@ -1,14 +1,9 @@
-import imp
 import json
 import re
 from urllib.request import urlopen
 import time
-
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-
-c = imp.load_source('Command',baseFile)
+from ..command import Command
+from .. import EVERYONE
 
 def grabUrls(text):
     """Given a text string, returns all the urls we can find in it."""
@@ -28,7 +23,7 @@ url = r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|ed
 
 url_re = re.compile(url, re.VERBOSE | re.MULTILINE)
 
-class SpamOffender():
+class SpamOffender:
 
     def warn(self):
         self.time = time.time()
@@ -55,7 +50,7 @@ class SpamOffender():
         self.numTimeouts = 0
 
 
-class SpamProtection(c.Command):
+class SpamProtection(Command):
 
     def __init__(self, bot, name):
         super(SpamProtection, self).__init__(bot, name)
@@ -152,7 +147,7 @@ class SpamProtection(c.Command):
                 timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
                 self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
                 response = response + " ("+str(timeoutLength)+" second time out)"
-                toMsg = "PRIVMSG "+channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
+                toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
                 sock.sendall(toMsg.encode('utf-8'))
 
 
@@ -167,13 +162,13 @@ class SpamProtection(c.Command):
 
 
 
-        sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
+        sockResponse = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
         sock.sendall(sockResponse.encode('utf-8'))
 
         return response
 
     def loadTwitchEmotes(self):
         response = urlopen('https://api.twitch.tv/kraken/chat/emoticons')
-        emotes = json.loads(response.read().decode())['emoticons']
+        emotes = json.loads(response.read().decode('utf-8'))['emoticons']
         for emote in emotes:
             self.emoteList[emote["regex"]] = re.compile(emote["regex"])

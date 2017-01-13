@@ -1,11 +1,6 @@
-import imp
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-    
-c = imp.load_source('Command',baseFile)
+from ..feature import Feature
 
-class ScheduledMsgFeature(c.Feature):
+class ScheduledMsgFeature(Feature):
 
     def __init__(self,bot,name):
         super(ScheduledMsgFeature,self).__init__(bot,name)
@@ -21,4 +16,3 @@ class ScheduledMsgFeature(c.Feature):
             response = schedCmd.tickMsg()
             if response != "":
                 self.sendMessage(response,sock)
-                
