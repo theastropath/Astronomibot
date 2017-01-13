@@ -68,6 +68,8 @@ class SpamProtection(c.Command):
         self.offenders = []
         self.emoteList = {}
 
+        self.loadTwitchEmotes()
+
     def getParams(self):
         params = []
         params.append({'title':'AsciiLimit','desc':'Number of non-standard characters allowed in a message before the user is warned','val':self.maxAsciiSpam})
@@ -175,7 +177,3 @@ class SpamProtection(c.Command):
         emotes = json.loads(response.read().decode())['emoticons']
         for emote in emotes:
             self.emoteList[emote["regex"]] = re.compile(emote["regex"])
-
-    def __init__(self,bot,name):
-        super(SpamProtection,self).__init__(bot,name)
-        self.loadTwitchEmotes()
