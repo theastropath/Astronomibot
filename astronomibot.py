@@ -50,7 +50,6 @@ running = True
 #############################################################################################################
 
 class Command:
-    name = ""
 
     #This function will take a msg and respond if this "command" should respond (True or False)
     def shouldRespond(self, msg, userLevel):
@@ -85,7 +84,6 @@ class Command:
         self.bot = bot
 
 class Feature:
-    name = ""
 
     #This function will go off and do whatever this feature is supposed to do
     def handleFeature(self,sock):
@@ -125,11 +123,10 @@ class Bot:
             os.makedirs(configDir+os.sep+channel[1:])
 
         try:
-            f = open(configDir+os.sep+channel[1:]+os.sep+self.logFile,encoding='utf-8')
-            for line in f:
-                logmsg = line.strip()
-                self.logs.append((logmsg.split("$$$")[0],logmsg.split("$$$")[1]))
-            f.close()
+            with open(configDir+os.sep+channel[1:]+os.sep+self.logFile,encoding='utf-8') as f:
+                for line in f:
+                    logmsg = line.strip()
+                    self.logs.append((logmsg.split("$$$")[0],logmsg.split("$$$")[1]))
         except FileNotFoundError:
             print ("Log file is not present")
 
@@ -172,10 +169,9 @@ class Bot:
         return False
 
     def exportLogs(self):
-        f = open(configDir+os.sep+channel[1:]+os.sep+self.logFile,mode='w',encoding="utf-8")
-        for log in self.logs:
-            f.write(log[0]+"$$$"+log[1]+"\n")
-        f.close()
+        with open(configDir+os.sep+channel[1:]+os.sep+self.logFile,mode='w',encoding="utf-8") as f:
+            for log in self.logs:
+                f.write(log[0]+"$$$"+log[1]+"\n")
 
 
 
@@ -333,8 +329,8 @@ def logMessage(sender,msg):
     if not os.path.exists(logDir+os.sep+channel[1:]):
         os.makedirs(logDir+os.sep+channel[1:])
 
-    f = open(logDir+os.sep+channel[1:]+os.sep+logFile,'a',encoding='utf-8')
-    f.write(logMsg)
+    with open(logDir+os.sep+channel[1:]+os.sep+logFile,'a',encoding='utf-8') as f:
+        f.write(logMsg)
 
 def connectToServer():
     print("Connecting to "+twitchIrcServer+":"+str(twitchIrcPort)+" as "+nick)

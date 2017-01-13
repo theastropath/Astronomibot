@@ -5,54 +5,52 @@ import json
 baseFile = "astronomibot.py"
 if __name__ == "__main__":
     baseFile = "../"+baseFile
-    
+
 c = imp.load_source('Command',baseFile)
 configDir = "config"
 
 class AutoHost(c.Feature):
-    hostCheckFrequency = 240 #In units based on the pollFreq (in astronomibot.py)
-    hostLength = 15 #In units based on the hostCheckFrequency!
-    
-    hostUpdate = 1
-    hostTime = 0
-    offlineTime = 0
-    hosting = False
-    hostList = []
-    hostListFile = "AutoHostList.txt"
 
     def __init__(self,bot,name):
         super(AutoHost,self).__init__(bot,name)
+
+        self.hostCheckFrequency = 240 #In units based on the pollFreq (in astronomibot.py)
+        self.hostLength = 15 #In units based on the hostCheckFrequency!
+
         self.hostUpdate = 1
+        self.hostTime = 0
+        self.offlineTime = 0
+        self.hostList = []
+        self.hostListFile = "AutoHostList.txt"
+
         self.channelId=0
         self.hostChannel = ""
-        self.hosting =  self.currentlyHosting(self.bot.channel[1:])
+        self.hosting =  elf.currentlyHosting(self.bot.channel[1:])
 
         if self.hosting:
             self.hostChannel = self.currentHostedChannel(self.bot.channel[1:])
-            
+
 
 
     def outputHostList(self):
-            f = open(configDir+os.sep+self.bot.channel[1:]+os.sep+self.hostListFile,mode='w',encoding="utf-8")
-            for channel in self.hostList:
-                f.write(channel.lower()+"\n")
-            f.close()
-        
+            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+self.hostListFile,mode='w',encoding="utf-8") as f:
+                for channel in self.hostList:
+                    f.write(channel.lower()+"\n")
+
     def readHostList(self):
         #Load regulars
         if not os.path.exists(configDir+os.sep+self.bot.channel[1:]):
             os.makedirs(configDir+os.sep+self.bot.channel[1:])
 
         try:
-            f = open(configDir+os.sep+self.bot.channel[1:]+os.sep+self.hostListFile,encoding='utf-8')
-            self.hostList=[]
-            for line in f:
-                channel = line.strip()
-                self.hostList.append(channel)
-            f.close()
+            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+self.hostListFile,encoding='utf-8') as f:
+                self.hostList=[]
+                for line in f:
+                    channel = line.strip()
+                    self.hostList.append(channel)
         except FileNotFoundError:
             print ("Host List file is not present")
-        
+
 
     def getParams(self):
         params = []
@@ -66,7 +64,7 @@ class AutoHost(c.Feature):
             self.hostCheckFrequency = float(val) * 2
         elif param == 'HostLength':
             self.hostLength = float(val) / self.hostCheckFrequency
-        
+
 
     def isStreamOnline(self,channelName):
         req = urllib.request.Request("https://api.twitch.tv/kraken/streams/"+channelName)
@@ -95,7 +93,7 @@ class AutoHost(c.Feature):
                 self.channelId = chanId
             except:
                 pass
-            
+
         if self.channelId!=0:
             #Check to see if we are hosting another channel
             req = urllib.request.Request("https://tmi.twitch.tv/hosts?include_logins=1&host="+str(self.channelId))
@@ -107,7 +105,7 @@ class AutoHost(c.Feature):
                     return True
 
             except:
-                pass            
+                pass
 
         return False
 
@@ -124,7 +122,7 @@ class AutoHost(c.Feature):
                 self.channelId = chanId
             except:
                 pass
-            
+
         if self.channelId!=0:
             #Check to see if we are hosting another channel
             req = urllib.request.Request("https://tmi.twitch.tv/hosts?include_logins=1&host="+str(self.channelId))
@@ -136,7 +134,7 @@ class AutoHost(c.Feature):
                     return hostsList['hosts'][0]['target_login']
 
             except:
-                pass            
+                pass
 
         return ""
 
@@ -157,8 +155,8 @@ class AutoHost(c.Feature):
         self.hosting = False
         self.bot.addLogMessage("AutoHost: No longer hosting")
         self.sendMessage("/unhost",sock)
-        
-        
+
+
 
     def handleFeature(self,sock):
         checkForNewHost = False
@@ -166,7 +164,7 @@ class AutoHost(c.Feature):
         self.hostUpdate = self.hostUpdate - 1
         if self.hostUpdate == 0:
             self.readHostList()
-            
+
             self.hostUpdate = self.hostCheckFrequency
 
             if not self.isStreamOnline(self.bot.channel[1:]):
@@ -178,7 +176,7 @@ class AutoHost(c.Feature):
                     return
                 else:
                     self.offlineTime = 3 #Prevent it from rolling over during long periods of offline
-                
+
                 #Stream is offline.
                 if self.hosting:
                     #Make sure we are still hosting a channel
@@ -214,6 +212,3 @@ class AutoHost(c.Feature):
                     self.stopHosting(sock)
                 self.hosting = False
                 self.offlineTime = 0
-            
-
-        

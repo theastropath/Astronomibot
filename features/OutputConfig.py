@@ -3,15 +3,17 @@ import os
 baseFile = "astronomibot.py"
 if __name__ == "__main__":
     baseFile = "../"+baseFile
-    
+
 c = imp.load_source('Command',baseFile)
 
 class OutputConfig(c.Feature):
-    configOutputFreq = 60
-    outputTime = 1
-    configExt = ".cfg"
-    configDir = "config"
-    
+    def __init__(self,bot,name):
+        super(OutputConfig, self).__init__(bot,name)
+        self.configOutputFreq = 60
+        self.outputTime = 1
+        self.configExt = ".cfg"
+        self.configDir = "config"
+
     def getParams(self):
         params = []
         params.append({'title':'ConfigUpdateFreq','desc':'How frequently the configs should be output (seconds)','val':self.configOutputFreq/2})
@@ -26,11 +28,10 @@ class OutputConfig(c.Feature):
         if not os.path.exists(self.configDir+os.sep+self.bot.channel[1:]):
             os.makedirs(self.configDir+os.sep+self.bot.channel[1:])
         if (len(obj.getParams())>0) and (obj.paramsChanged() or not os.path.isfile(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt))):
-            f = open(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt),'w')
-            for param in obj.getParams():
-                f.write(param['title']+" "+str(param['val'])+"\n")
-            f.close()
-    
+            with open(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt),'w') as f:
+                for param in obj.getParams():
+                    f.write(param['title']+" "+str(param['val'])+"\n")
+
     def handleFeature(self,sock):
         self.outputTime = self.outputTime - 1
         if self.outputTime == 0:
@@ -40,6 +41,3 @@ class OutputConfig(c.Feature):
                 self.outputConfig(command)
             for feature in self.bot.getFeatures():
                 self.outputConfig(feature)
-
-                    
-        

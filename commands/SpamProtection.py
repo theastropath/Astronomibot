@@ -7,7 +7,7 @@ import time
 baseFile = "astronomibot.py"
 if __name__ == "__main__":
     baseFile = "../"+baseFile
-    
+
 c = imp.load_source('Command',baseFile)
 
 def grabUrls(text):
@@ -48,22 +48,25 @@ class SpamOffender():
 
     def __eq__(self,key):
         return key == self.name
-    
+
     def __init__(self,name):
         self.name = name
         self.time = time.time()
         self.numTimeouts = 0
-        
+
 
 class SpamProtection(c.Command):
 
-    commonChars=["!","?",","," ","$",".","-","=","(",")","*","&","#",":","/","\\"]
-    maxAsciiSpam = 10
-    maxEmoteSpam = 10
-    timeoutPeriod = 30 #in seconds
-    warningPeriod = 300 #In seconds
-    offenders = []
-    emoteList ={}
+    def __init__(self, bot, name):
+        super(SpamProtection, self).__init__(bot, name)
+
+        self.commonChars = {"!","?",","," ","$",".","-","=","(",")","*","&","#",":","/","\\"}
+        self.maxAsciiSpam = 10
+        self.maxEmoteSpam = 10
+        self.timeoutPeriod = 30 #in seconds
+        self.warningPeriod = 300 #In seconds
+        self.offenders = []
+        self.emoteList = {}
 
     def getParams(self):
         params = []
@@ -86,7 +89,7 @@ class SpamProtection(c.Command):
 
     def asciiSpamCheck(self,msg,userLevel):
         nonAlnumCount=0
-        
+
         if msg.messageType == 'PRIVMSG':
             for char in msg.msg:
                 if not char.isalnum():
@@ -97,7 +100,7 @@ class SpamProtection(c.Command):
 
     def emoteSpamCheck(self,msg,userLevel):
         emoteCount = 0
-        
+
         for emote in self.emoteList.keys():
             matches = self.emoteList[emote].findall(msg.msg)
             if len(matches)>0:
@@ -111,12 +114,12 @@ class SpamProtection(c.Command):
             if len(matchedUrls)>0:
                 return True
         return False
-    
+
     def shouldRespond(self, msg, userLevel):
 
         if userLevel != EVERYONE:
             return False
-        
+
         if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
             return True
 
@@ -127,16 +130,16 @@ class SpamProtection(c.Command):
             return False
 
 
-                               
+
         return False
 
     def respond(self,msg,sock):
         response = ""
         warnOnly = True
-        
+
         if self.asciiSpamCheck(msg,EVERYONE)>self.maxAsciiSpam:
             response = "Don't spam characters like that, "+msg.sender+"!"
-            
+
         if self.emoteSpamCheck(msg,EVERYONE)>self.maxEmoteSpam:
             response = "Don't spam emotes like that, "+msg.sender+"!"
 
@@ -158,9 +161,9 @@ class SpamProtection(c.Command):
             offender = SpamOffender(msg.sender)
             self.offenders.append(offender)
             response = response + " (Warning)"
-            
-            
-    
+
+
+
 
         sockResponse = "PRIVMSG "+channel+" :"+response+"\n"
         sock.sendall(sockResponse.encode('utf-8'))
@@ -176,4 +179,3 @@ class SpamProtection(c.Command):
     def __init__(self,bot,name):
         super(SpamProtection,self).__init__(bot,name)
         self.loadTwitchEmotes()
-

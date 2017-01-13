@@ -3,14 +3,10 @@ import random
 baseFile = "astronomibot.py"
 if __name__ == "__main__":
     baseFile = "../"+baseFile
-    
+
 c = imp.load_source('Command',baseFile)
 
 class GiveAway(c.Command):
-    keyword = ""
-    eligible = []
-    usingKeyword = False
-    running = False
 
     def getParams(self):
         params = []
@@ -52,17 +48,17 @@ class GiveAway(c.Command):
         tables.append(eligible)
 
         return tables
-    
+
     def getDescription(self, full=False):
         if full:
             return "Moderators can set up and operate raffles via Astronomibot.  Commands shown are added after a generic '!giveaway' command."
         else:
             return "Run raffles and giveaways!"
-        
+
     def getGiveAwayHelp(self):
         response = "Set a giveaway keyword with '!giveaway keyword <phrase>', then start with '!giveaway start'.  Anyone who types the keyword will be entered.  Draw a winner with '!giveaway draw'.  Can also do 'reset' and 'stop'"
         return response
-    
+
     def shouldRespond(self, msg, userLevel):
 
         if self.running:
@@ -71,7 +67,7 @@ class GiveAway(c.Command):
                     return True
             else:
                 return True
-        
+
         if msg.messageType == 'PRIVMSG' and len(msg.msg)!=0:
             if msg.msg[0]=='!':
                 command = msg.msg.split()[0].lower()
@@ -96,7 +92,7 @@ class GiveAway(c.Command):
         if addToList:
             if msg.sender not in self.eligible:
                 self.eligible.append(msg.sender)
-            
+
 
         if fullCmd[0]=="!giveaway":
             if len(fullCmd) < 2:
@@ -116,7 +112,7 @@ class GiveAway(c.Command):
                     else:
                         #Draw from those in the eligible list
                         eligible = self.eligible
-                        
+
                     if ("astronomibot" in eligible):
                         eligible.remove("astronomibot")
                     winner = random.choice(self.eligible)
@@ -148,11 +144,11 @@ class GiveAway(c.Command):
 
     def __init__(self,bot,name):
         super(GiveAway,self).__init__(bot,name)
-
+        self.keyword = ""
+        self.eligible = []
+        self.usingKeyword = False
+        self.running = False
         if not self.bot.isCmdRegistered("!giveaway"):
             self.bot.regCmd("!giveaway",self)
         else:
             print ("!giveaway is already registered to ",self.bot.getCmdOwner("!giveaway"))
-        
-    
-        
