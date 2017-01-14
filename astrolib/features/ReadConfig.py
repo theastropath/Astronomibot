@@ -1,17 +1,14 @@
-import imp
 import os
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-    
-c = imp.load_source('Command',baseFile)
+from astrolib.feature import Feature
 
-class ReadConfig(c.Feature):
-    configReadFreq = 60
-    readTime = 1
-    configExt = ".cfg"
-    configDir = "config"
-    
+class ReadConfig(Feature):
+    def __init__(self,bot,name):
+        super(ReadConfig, self).__init__(bot,name)
+        self.configReadFreq = 60
+        self.readTime = 1
+        self.configExt = ".cfg"
+        self.configDir = "config"
+
     def getParams(self):
         params = []
         params.append({'title':'ConfigReadFreq','desc':'How frequently the configs should be read (seconds)','val':self.configReadFreq/2})
@@ -26,14 +23,13 @@ class ReadConfig(c.Feature):
         if os.path.exists(self.configDir+os.sep+self.bot.channel[1:]):
             if len(obj.getParams())>0: #Has parameters to configure
                 try:
-                    f = open(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt),'r')
-                    for line in f:
-                        param = line.strip().split()
-                        obj.setParam(param[0],str(param[1]))
-                    f.close()
+                    with open(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt),'r') as f:
+                        for line in f:
+                            param, val = line.strip().split(None, 1)
+                            obj.setParam(param, val)
                 except FileNotFoundError:
                     pass
-        
+
     def handleFeature(self,sock):
         self.readTime = self.readTime - 1
         if self.readTime == 0:
@@ -43,6 +39,3 @@ class ReadConfig(c.Feature):
                 self.readConfig(command)
             for feature in self.bot.getFeatures():
                 self.readConfig(feature)
-
-                    
-        

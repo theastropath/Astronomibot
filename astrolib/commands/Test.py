@@ -1,11 +1,6 @@
-import imp
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-    
-c = imp.load_source('Command',baseFile)
+from astrolib.command import Command
 
-class Test(c.Command):
+class Test(Command):
 
     def getParams(self):
         params = []
@@ -13,7 +8,7 @@ class Test(c.Command):
 
     def setParam(self, param, val):
         pass
-    
+
     def shouldRespond(self, msg, userLevel):
         #print ("Test: Should we respond to message type "+msg.messageType+"?")
         return True
@@ -21,4 +16,3 @@ class Test(c.Command):
     def respond(self,msg,sock):
         #print ("Test: Responding")
         return ""
-        

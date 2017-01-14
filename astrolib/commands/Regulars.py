@@ -1,15 +1,12 @@
-import imp
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-    
-c = imp.load_source('Command',baseFile)
+import os
+from astrolib.command import Command
+from astrolib import MOD
 
 configDir = "config"
 regFile = "regulars.txt"
 
-class Regulars(c.Command):
-    
+class Regulars(Command):
+
     def __init__(self,bot,name):
         super(Regulars,self).__init__(bot,name)
         self.bot = bot
@@ -23,24 +20,23 @@ class Regulars(c.Command):
             self.bot.regCmd("!delreg",self)
         else:
             print("!delreg is already registered to ",self.bot.getCmdOwner("!delreg"))
-        
+
         #Load regulars
-        if not os.path.exists(configDir+os.sep+channel[1:]):
-            os.makedirs(configDir+os.sep+channel[1:])
+        if not os.path.exists(configDir+os.sep+self.bot.channel[1:]):
+            os.makedirs(configDir+os.sep+self.bot.channel[1:])
 
         try:
-            f = open(configDir+os.sep+channel[1:]+os.sep+regFile,encoding='utf-8')
-            for line in f:
-                reg = line.strip()
-                self.bot.regulars.append(reg)
-            f.close()
+            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+regFile,encoding='utf-8') as f:
+                for line in f:
+                    reg = line.strip()
+                    self.bot.regulars.append(reg)
         except FileNotFoundError:
             print ("Regulars file is not present")
 
 
     def getParams(self):
         params = []
-        
+
         return params
 
     def setParam(self, param, val):
@@ -52,7 +48,7 @@ class Regulars(c.Command):
         commands = [("Command","Description","Example")]
         commands.append(("!addreg","Adds one or more users as a 'regular viewer'","!addreg "+self.bot.name))
         commands.append(("!delreg","Removes one or more users as a 'regular viewer'","!delreg "+self.bot.name))
-        
+
         regs = [("User",)]
         for reg in self.bot.regulars:
             regs.append((reg,))
@@ -62,13 +58,13 @@ class Regulars(c.Command):
         tables.append(regs)
 
         return tables
-    
+
     def getDescription(self, full=False):
         if full:
             return "Functionality for giving 'regular viewers' higher permission levels to perform commands than those just watching for the first time.  Only usable by moderators or above"
         else:
             return "Managing 'regular viewers'"
-    
+
     def shouldRespond(self, msg, userLevel):
         if userLevel>=MOD:
             if msg.messageType == 'PRIVMSG' and len(msg.msg)!=0:
@@ -111,15 +107,14 @@ class Regulars(c.Command):
                     self.bot.addLogMessage("Regulars: Removing "+reg+" from the regular")
 
                     self.bot.regulars.remove(reg.lower())
-            
+
 
         #Save the new list of regulars
         if changed:
-            commands = channel[1:]+cmdFile
-            f = open(configDir+os.sep+channel[1:]+os.sep+regFile,mode='w',encoding="utf-8")
-            for reg in self.bot.regulars:
-                f.write(reg.lower()+"\n")
-            f.close()
+            commands = self.bot.channel[1:]+cmdFile
+            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+regFile,mode='w',encoding="utf-8") as f:
+                for reg in self.bot.regulars:
+                    f.write(reg.lower()+"\n")
 
         response = ""
 
@@ -152,8 +147,7 @@ class Regulars(c.Command):
             response+="the regulars list.  "
 
 
-        ircResponse = "PRIVMSG "+channel+" :"+response+"\n"
+        ircResponse = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
         sock.sendall(ircResponse.encode('utf-8'))
 
         return response
-        

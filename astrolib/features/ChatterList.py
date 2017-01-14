@@ -1,18 +1,14 @@
-import imp
 from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
 import json
+from astrolib.feature import Feature
 
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-    
-c = imp.load_source('Command',baseFile)
+class ChatterList(Feature):
+    def __init__(self,bot,name):
+        super(ChatterList,self).__init__(bot,name)
+        self.chatListFreq = 120
+        self.chatUpdate = 1
 
-class ChatterList(c.Feature):
-    chatListFreq = 120
-    chatUpdate = 1
-    
     def getParams(self):
         params = []
         params.append({'title':'ChatUpdateFreq','desc':'How frequently the the chatter list should be updated (seconds)','val':self.chatListFreq/2})
@@ -23,7 +19,7 @@ class ChatterList(c.Feature):
         if param == 'ChatUpdateFreq':
             self.chatListFreq = float(val) * 2
 
-    
+
     def handleFeature(self,sock):
         allchatters = []
         self.chatUpdate = self.chatUpdate - 1

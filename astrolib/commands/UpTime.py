@@ -1,16 +1,11 @@
-import imp
 import urllib
 import json
 import calendar
+import time
 from datetime import timedelta
+from astrolib.command import Command
 
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-    
-c = imp.load_source('Command',baseFile)
-
-class UpTime(c.Command):
+class UpTime(Command):
     def __init__(self,bot,name):
         super(UpTime,self).__init__(bot,name)
         self.bot = bot
@@ -27,15 +22,15 @@ class UpTime(c.Command):
 
     def setParam(self, param, val):
         pass
-    
+
     def shouldRespond(self, msg, userLevel):
         if msg.messageType == 'PRIVMSG' and len(msg.msg)!=0:
             splitMsg = msg.msg.split()
             if splitMsg[0]=='!uptime':
                 return True
-            
+
         return False
-    
+
     def isStreamOnline(self,channelName):
         req = urllib.request.Request("https://api.twitch.tv/kraken/streams/"+channelName)
         req.add_header('Client-ID',self.bot.clientId)
@@ -67,9 +62,9 @@ class UpTime(c.Command):
                 self.lastKnownUptime = liveDelta
         except:
             pass
-        
+
         return self.lastKnownUptime
-    
+
     def getState(self):
         tables = []
 
@@ -92,7 +87,7 @@ class UpTime(c.Command):
         tables.append(cmds)
 
         return tables
-    
+
     def getDescription(self, full=False):
         if full:
             return "Users can get the amount of time that the channel has been live"
@@ -102,16 +97,14 @@ class UpTime(c.Command):
 
     def respond(self,msg,sock):
         response = ""
-        channelName=channel[1:]
+        channelName=self.bot.channel[1:]
 
         if not self.isStreamOnline(channelName):
             response = "Stream is not live"
         else:
             response = "Stream has been live for "+str(self.getStreamLiveTime(channelName))
-            
-        ircResponse = "PRIVMSG "+channel+" :"+response+"\n"
+
+        ircResponse = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
         sock.sendall(ircResponse.encode('utf-8'))
 
         return response
-
-        

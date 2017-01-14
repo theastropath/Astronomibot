@@ -1,9 +1,5 @@
-import imp
-baseFile = "astronomibot.py"
-if __name__ == "__main__":
-    baseFile = "../"+baseFile
-    
-c = imp.load_source('Command',baseFile)
+from astrolib.command import Command
+from astrolib import MOD
 
 class ScheduledMsg():
 
@@ -55,22 +51,22 @@ class ScheduledMsg():
                 self.numMsgs=0
 
         return response
-    
 
 
-class ScheduledMsgCmd(c.Command):
+
+class ScheduledMsgCmd(Command):
 
     args = ["create","start","stop","delete"]
-    
+
     INVALIDVALUE=-1
 
-    maxFreq = 120
-    maxMsgBetween = 100
 
-    schedMsgs = {}
-    
     def __init__(self,bot,name):
         super(ScheduledMsgCmd,self).__init__(bot,name)
+        self.maxFreq = 120
+        self.maxMsgBetween = 100
+
+        self.schedMsgs = {}
         if not self.bot.isCmdRegistered("!schedulemsg"):
             self.bot.regCmd("!schedulemsg",self)
         else:
@@ -109,7 +105,7 @@ class ScheduledMsgCmd(c.Command):
         response = "Deleting command '"+cmd+"'"
         del self.schedMsgs[cmd]
         return response
-    
+
     def shouldRespond(self, msg, userLevel):
 
         #Increment number of messages between scheduled msgs for every message NOT from twitchnotify
@@ -130,7 +126,7 @@ class ScheduledMsgCmd(c.Command):
                             #Requires message frequency in minutes and optionally messages between
                             if len(fullmsg)==4 or len(fullmsg)==5:
                                 return True
-        
+
         return False
 
     def respond(self,msg,sock):
@@ -147,7 +143,7 @@ class ScheduledMsgCmd(c.Command):
                 frequency = int(fullmsg[3])
             except ValueError:
                 frequency = self.INVALIDVALUE
-            
+
             if frequency > self.maxFreq:
                 frequency = self.INVALIDVALUE
 
@@ -162,7 +158,7 @@ class ScheduledMsgCmd(c.Command):
 
         if arg == "create":
             validConfig=(frequency>0 and msgBetween>=0)
-            
+
             #Check to see if command has already been scheduled.
             if scheduledCmd in self.schedMsgs.keys():
                 response = "Command has already been scheduled"
@@ -175,7 +171,7 @@ class ScheduledMsgCmd(c.Command):
                 #Ensure the scheduled command has already been created
                 if scheduledCmd not in self.schedMsgs.keys():
                     response = "Command has not yet been scheduled"
-                else: 
+                else:
                     #If already created:
                     if arg=="start":
                         response=self.startSched(scheduledCmd)
@@ -188,4 +184,3 @@ class ScheduledMsgCmd(c.Command):
         sock.sendall(ircResponse.encode('utf-8'))
 
         return response
-        
