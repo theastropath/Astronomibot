@@ -11,9 +11,7 @@ import sys
 import imp
 import traceback
 
-from astrolib import \
-    EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr, \
-    replaceTerm, countTerm, referenceCountTerm
+from astrolib import EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr
 
 twitchIrcServer = "irc.twitch.tv"
 twitchIrcPort = 6667
