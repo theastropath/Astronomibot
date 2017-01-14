@@ -3,17 +3,105 @@ import ftplib
 import os
 from datetime import datetime
 import time
+from html import escape
 from astrolib.feature import Feature
 ftpCredFile = "ftpcreds.txt"
 
+# string-like wrapper class that marks a string as html-safe
+# If HtmlSafeStr objects are joined with normal strings (through +, %, join or
+# format) the normal strings are escaped and a HtmlSafeStr object is returned.
+# This is a bit overdone, implementing more methods than used here.
+# This is more or less like Ruby on Rails does it.
+class HtmlSafeStr:
+    __slots__ = '__str',
+
+    def __init__(self, str):
+        self.__str = str
+
+    def __str__(self):
+        return self.__str
+
+    def __repr__(self):
+        return 'HtmlSafeStr(%r)' % self.__str
+
+    def __add__(self, other):
+        return HtmlSafeStr(self.__str + str(h(other)))
+
+    def __radd__(self, other):
+        return HtmlSafeStr(str(h(other)) + self.__str)
+
+    def __mul__(self, count):
+        if type(count) is not int:
+            raise ValueError
+
+        return HtmlSafeStr(self.__str * count)
+
+    __rmul__ = __mul__
+
+    def __eq__(self, other):
+        return self.__str == str(h(other))
+
+    def __ne__(self, other):
+        return self.__str != str(h(other))
+
+    def __lt__(self, other):
+        return self.__str < str(h(other))
+
+    def __gt__(self, other):
+        return self.__str > str(h(other))
+
+    def __le__(self, other):
+        return self.__str <= str(h(other))
+
+    def __ge__(self, other):
+        return self.__str >= str(h(other))
+
+    def __hash__(self):
+        return hash(self.__str)
+
+    def __mod__(self, args):
+        if isinstance(args, str):
+            return HtmlSafeStr(self.__str % str(h(args)))
+
+        return HtmlSafeStr(self.__str % tuple(str(h(arg)) for arg in args))
+
+    def __len__(self):
+        return len(self.__str)
+
+    def join(self, strs):
+        return HtmlSafeStr(self.__str.join(str(h(s)) for s in strs))
+
+    def format(self, *args, **kwargs):
+        return HtmlSafeStr(self.__str.format(**dict((key, h(value)) for key, value in kwargs.items())))
+
+# escape string, but only if needed and return marked as html-safe
+def h(s):
+    if isinstance(s, HtmlSafeStr):
+        return s
+
+    return HtmlSafeStr(escape(str(s)))
+
+# very simple html template function
+def templ(*args, **kwargs):
+    templstr, args = args[0], args[1:]
+    return HtmlSafeStr(templstr).format(*args, **kwargs)
+
 class WebsiteOutput(Feature):
     def startHtmlFile(self,title,background="000000"):
-        response = '<!DOCTYPE html><html><head>'
-        response+= '<style>table, th, td { border: 1px solid black; }</style>'
-        response+= '<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'
-        response+= '<meta http-equiv="refresh" content="'+str(int(self.refreshFreq))+'"/>'
-        response+= '<title>'+str(title)+'</title>'
-        response+= '</head><body bgcolor="#'+background+'">'
+        response = templ('''\
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table, th, td {{ border: 1px solid black; }}
+body {{ background: #{background} }}
+</style>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="refresh" content="{refresh}" />
+<title>{title}</title>
+</head>
+<body>
+''', refresh=int(self.refreshFreq), title=title, background=background)
         return response
 
     def endHtmlFile(self):
@@ -28,43 +116,49 @@ class WebsiteOutput(Feature):
             f.write(file)
 
     def htmlLink(self,text,url):
-        return '<a href="'+url+'">'+text+'</a>'
+        return templ('<a href="{url}">{text}</a>', url=url, text=text)
 
     def generateTablePage(self,tables,name,fullDescription="",filename=""):
-        page = ""
-        page += self.startHtmlFile(name,"DCDCDC")
-        page += "<h1>"+name+"</h1>"
-
-        page+=fullDescription.replace('\n','<br>')+"<br><br>"
+        buf = [
+            self.startHtmlFile(name, "DCDCDC"),
+            templ("<h1>{name}</h1>", name=name),
+            HtmlSafeStr('<br/>').join(fullDescription.split('\n')),
+            '<br/><br/>'
+        ]
 
         if filename != "index": #Kludge, yo
-            page += self.htmlLink("Return to Index","index.html")+"<br><br>"
+            buf.append(self.htmlLink("Return to Index", "index.html"))
+            buf.append("<br/><br/>")
+
         for table in tables:
-            if len(table)>0:
-                page +="<table>"
+            if table:
+                buf.append("<table><thead><tr>")
 
                 #Column titles
-                page  += "<tr>"
                 for element in table[0]:
-                    page +="<td>"
-                    page +="<b>"+element+"</b>"
-                    page +="</td>"
-                page  += "</tr>"
-                for row in table[1:]:
-                    page +="<tr>"
-                    for element in row:
-                        page+="<td>"
-                        page+=str(element)
-                        page+="</td>"
-                    page +="</tr>"
-                page +="</table>"
-                page+="<br><br>"
-        page += "<br><small><i>Page generated at "+datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]+"</i></small>"
+                    buf.append(templ('<th>{hdr}</th>', hdr=element))
 
-        page += self.endHtmlFile()
-        if filename == "":
+                buf.append("</tr></thead><tbody>")
+
+                for row in table[1:]:
+                    buf.append('<tr>')
+                    for element in row:
+                        buf.append(templ('<td>{cell}</td>', cell=element))
+                    buf.append('</tr>')
+
+                buf.append("</tbody></table><br/><br/>")
+
+        buf.append(templ('<br/><small><i>Page generated at {time} {tz}</i></small>',
+            time=datetime.now().ctime(),
+            tz=time.tzname[time.localtime().tm_isdst]
+        ))
+
+        buf.append(self.endHtmlFile())
+        page = ''.join(str(chunk) for chunk in buf)
+
+        if not filename:
             filename = name
-        self.outputFile(page,filename)
+        self.outputFile(page, filename)
 
     def ftpUpload(self):
         if os.path.exists(self.outputLocation+os.sep+self.bot.channel[1:]):
@@ -124,7 +218,7 @@ class WebsiteOutput(Feature):
             for mod in indexMods:
                 indexTable.append((self.htmlLink(mod.name,mod.name+".html"),mod.getDescription()))
 
-            self.generateTablePage([[("<b>User</b>","<b>User Level</b>")]+self.bot.getChatters()],"Chatters","All users currently in the chat channel","chatters")
+            self.generateTablePage([[("User","User Level")]+self.bot.getChatters()],"Chatters","All users currently in the chat channel","chatters")
             indexTable.append((self.htmlLink("Chatters","chatters.html"),"A list of all users in chat"))
 
             self.generateTablePage([indexTable],"Astronomibot","","index")

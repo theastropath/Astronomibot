@@ -52,7 +52,7 @@ class MiLight(Command):
 
         cmds = []
         cmds.append(("Command","Description","Example"))
-        cmds.append(("!light &lt;r&gt; &lt;g&gt; &lt;b&gt;","Specify an exact colour with RGB values for the light.  Values are between 0 and 255","!light 255 0 128"))
+        cmds.append(("!light <r> <g> <b>","Specify an exact colour with RGB values for the light.  Values are between 0 and 255","!light 255 0 128"))
         cmds.append(("!disco","Makes the light flash between various colours","!disco"))
         cmds.append(("!swirl","Makes the light gently swirl between all the colours","!swirl"))
 
