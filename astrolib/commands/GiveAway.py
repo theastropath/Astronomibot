@@ -126,7 +126,7 @@ class GiveAway(Command):
                         self.usingKeyword = False
                         response = "Giveaway: No longer using keyword"
                         self.eligible = []
-                    else :
+                    else:
                         self.keyword = " ".join(fullCmd[2:])
                         self.usingKeyword = True
                         response = "Giveaway: New keyword is '"+self.keyword+"'"

@@ -2,6 +2,7 @@ from astrolib.command import Command
 from astrolib import MOD
 
 import json
+import urllib
 
 class ChannelManagement(Command):
 
