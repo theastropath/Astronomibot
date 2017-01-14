@@ -11,15 +11,15 @@ import sys
 import imp
 import traceback
 
-from lib import EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr
+from astrolib import EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr
 
 twitchIrcServer = "irc.twitch.tv"
 twitchIrcPort = 6667
 credFile = "creds.txt"
 channel = "#theastropath" #Channel name has to be all lowercase
 logDir = "logs"
-commandsDir = os.path.join("lib", "commands")
-featuresDir = os.path.join("lib", "features")
+commandsDir = os.path.join("astrolib", "commands")
+featuresDir = os.path.join("astrolib", "features")
 configDir = "config"
 
 nick=""
@@ -140,22 +140,20 @@ class Bot:
     def checkCommandsAndFeatures(self):
         commandFiles = []
         for command in os.listdir(commandsDir):
-            commandName = command[:-3]
-            if ".py" == command[-3:] and commandName not in self.commands and commandName != '__init__':
+            commandName, ext = os.path.splitext(command)
+            if ".py" == ext and commandName not in self.commands:
                 commandFiles.append(commandName)
 
         featureFiles = []
         for feature in os.listdir(featuresDir):
-            featureName = feature[:-3]
-            if ".py" == feature[-3:] and featureName not in self.features and featureName != '__init__':
+            featureName, ext = os.path.splitext(feature)
+            if ".py" == ext and featureName not in self.features:
                 featureFiles.append(featureName)
 
-        imp.load_source('lib.commands', os.path.join(commandsDir, '__init__.py'))
-        imp.load_source('lib.features', os.path.join(featuresDir, '__init__.py'))
         for command in commandFiles:
 
             #Load file, and get the corresponding class in it, then instantiate it
-            c = imp.load_source('lib.commands.'+command,commandsDir+os.sep+command+".py")
+            c = imp.load_source('astrolib.commands.'+command, os.path.join(commandsDir, command+".py"))
             try:
                 cmd = getattr(c,command)
                 self.commands.append(cmd(self,command))
@@ -165,7 +163,7 @@ class Bot:
 
         for feature in featureFiles:
             #Load file, and get the corresponding class in it, then instantiate it
-            f = imp.load_source('lib.features.'+feature,featuresDir+os.sep+feature+".py")
+            f = imp.load_source('astrolib.features.'+feature, os.path.join(featuresDir, feature+".py"))
             try:
                 feat = getattr(f,feature)
                 self.features.append(feat(self,feature))
@@ -242,13 +240,14 @@ def handleNoticeMessage(msg):
 def logMessage(sender,msg):
     curTime = datetime.now()
     timestamp = curTime.strftime("%Y-%m-%d %H:%M:%S")
-    logFile = curTime.strftime("%Y-%m-%d")+".txt"
-    logMsg = (timestamp+" - "+sender+": "+msg+"\n")
+    logFile = curTime.strftime("%Y-%m-%d.txt")
+    logMsg = timestamp+" - "+sender+": "+msg+"\n"
+    channelLogDir = os.path.join(logDir, channels[1:])
 
-    if not os.path.exists(logDir+os.sep+channel[1:]):
-        os.makedirs(logDir+os.sep+channel[1:])
+    if not os.path.exists(channelLogDir):
+        os.makedirs(channelLogDir)
 
-    with open(logDir+os.sep+channel[1:]+os.sep+logFile,'a',encoding='utf-8') as f:
+    with open(os.path.join(channelLogDir, logFile), 'a', encoding='utf-8') as f:
         f.write(logMsg)
 
 def connectToServer():

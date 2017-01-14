@@ -1,5 +1,5 @@
-from ..command import Command
-from .. import MOD
+from astrolib.command import Command
+from astrolib import MOD
 
 import json
 

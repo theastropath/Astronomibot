@@ -1,7 +1,7 @@
 import urllib
 import json
 import os
-from ..feature import Feature
+from astrolib.feature import Feature
 
 configDir = "config"
 

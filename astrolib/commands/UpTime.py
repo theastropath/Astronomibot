@@ -2,7 +2,7 @@ import urllib
 import json
 import calendar
 from datetime import timedelta
-from ..command import Command
+from astrolib.command import Command
 
 class UpTime(Command):
     def __init__(self,bot,name):

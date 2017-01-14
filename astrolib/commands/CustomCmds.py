@@ -1,5 +1,5 @@
-from ..command import Command
-from .. import EVERYONE, MOD, REGULAR, BROADCASTER, userLevelToStr
+from astrolib.command import Command
+from astrolib import EVERYONE, MOD, REGULAR, BROADCASTER, userLevelToStr
 
 cmdFile = "cmds.txt"
 

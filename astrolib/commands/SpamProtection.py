@@ -2,8 +2,8 @@ import json
 import re
 from urllib.request import urlopen
 import time
-from ..command import Command
-from .. import EVERYONE
+from astrolib.command import Command
+from astrolib import EVERYONE
 
 def grabUrls(text):
     """Given a text string, returns all the urls we can find in it."""

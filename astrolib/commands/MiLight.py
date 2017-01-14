@@ -1,7 +1,7 @@
 import milight
 import webcolors
-from ..command import Command
-from .. import BROADCASTER
+from astrolib.command import Command
+from astrolib import BROADCASTER
 
 class MiLight(Command):
 

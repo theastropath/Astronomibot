@@ -3,7 +3,7 @@ import ftplib
 import os
 from datetime import datetime
 import time
-from ..feature import Feature
+from astrolib.feature import Feature
 ftpCredFile = "ftpcreds.txt"
 
 class WebsiteOutput(Feature):

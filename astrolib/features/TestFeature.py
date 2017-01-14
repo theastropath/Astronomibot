@@ -1,4 +1,4 @@
-from ..feature import Feature
+from astrolib.feature import Feature
 
 class TestFeature(Feature):
 

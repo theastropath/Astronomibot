@@ -1,4 +1,4 @@
-from ..command import Command
+from astrolib.command import Command
 
 class Ping(Command):
 

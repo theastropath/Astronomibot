@@ -1,7 +1,7 @@
 from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
 import json
-from ..feature import Feature
+from astrolib.feature import Feature
 
 class ChatterList(Feature):
     def __init__(self,bot,name):

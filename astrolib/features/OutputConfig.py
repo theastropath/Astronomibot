@@ -1,5 +1,5 @@
 import os
-from ..feature import Feature
+from astrolib.feature import Feature
 
 class OutputConfig(Feature):
     def __init__(self,bot,name):
