@@ -188,7 +188,7 @@ class Bot:
 class IrcMessage:
     def __init__(self, message):
         msgstr = message.rstrip()
-        breakdown = msgstr.split(' ', 2)
+        breakdown = msgstr.split(None, 2)
         prefix = breakdown[0]
         messageType = breakdown[1]
         rest = breakdown[2] if len(breakdown) > 2 else ''
@@ -202,14 +202,14 @@ class IrcMessage:
         self.channel = ''
         self.msg = ''
         if messageType == 'PRIVMSG':
-            breakdown = rest.split(' ', 1)
+            breakdown = rest.split(None, 1)
             self.sender = prefix.split('!', 1)[0][1:]
             self.channel = breakdown[0]
             self.msg = breakdown[1][1:] if len(breakdown) > 1 else ''
         elif messageType == 'PING':
             self.msg = rest
         elif messageType == 'NOTICE':
-            breakdown = rest.split(' ', 1)
+            breakdown = rest.split(None, 1)
             self.sender = prefix[1:]
             self.channel = breakdown[0]
             self.msg = breakdown[1][1:] if len(breakdown) > 1 else ''
