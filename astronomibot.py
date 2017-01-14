@@ -11,7 +11,9 @@ import sys
 import imp
 import traceback
 
-from astrolib import EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr
+from astrolib import \
+    EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr, \
+    replaceTerm, countTerm, referenceCountTerm
 
 twitchIrcServer = "irc.twitch.tv"
 twitchIrcPort = 6667
@@ -31,10 +33,6 @@ accessToken=""
 pollFreq=0.5
 
 recvAmount=4096
-
-replaceTerm="$REPLACE"
-countTerm="$COUNT"
-referenceCountTerm="$REF"
 
 running = True
 

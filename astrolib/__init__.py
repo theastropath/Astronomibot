@@ -3,6 +3,10 @@ REGULAR = 2
 MOD = 3
 BROADCASTER = 4
 
+replaceTerm="$REPLACE"
+countTerm="$COUNT"
+referenceCountTerm="$REF"
+
 def userLevelToStr(userLevel):
     if userLevel == EVERYONE:
         return "Everyone"

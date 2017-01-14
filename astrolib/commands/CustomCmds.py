@@ -1,5 +1,7 @@
 from astrolib.command import Command
-from astrolib import EVERYONE, MOD, REGULAR, BROADCASTER, userLevelToStr
+from astrolib import \
+    EVERYONE, MOD, REGULAR, BROADCASTER, userLevelToStr, \
+    replaceTerm, countTerm, referenceCountTerm
 
 cmdFile = "cmds.txt"
 
