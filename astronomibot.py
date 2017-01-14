@@ -205,14 +205,14 @@ class IrcMessage:
             breakdown = rest.split(' ', 1)
             self.sender = prefix.split('!', 1)[0][1:]
             self.channel = breakdown[0]
-            self.msg = breakdown[1] if len(breakdown) > 1 else ''
+            self.msg = breakdown[1][1:] if len(breakdown) > 1 else ''
         elif messageType == 'PING':
             self.msg = rest
         elif messageType == 'NOTICE':
             breakdown = rest.split(' ', 1)
             self.sender = prefix[1:]
             self.channel = breakdown[0]
-            self.msg = breakdown[1] if len(breakdown) > 1 else ''
+            self.msg = breakdown[1][1:] if len(breakdown) > 1 else ''
 
         if not self.msg:
             self.messageType = 'INVALID'
@@ -240,7 +240,7 @@ def logMessage(sender,msg):
     timestamp = curTime.strftime("%Y-%m-%d %H:%M:%S")
     logFile = curTime.strftime("%Y-%m-%d.txt")
     logMsg = timestamp+" - "+sender+": "+msg+"\n"
-    channelLogDir = os.path.join(logDir, channels[1:])
+    channelLogDir = os.path.join(logDir, channel[1:])
 
     if not os.path.exists(channelLogDir):
         os.makedirs(channelLogDir)
