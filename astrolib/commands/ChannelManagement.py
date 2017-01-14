@@ -27,10 +27,11 @@ class ChannelManagement(Command):
     def getState(self):
         tables = []
 
-        cmds = []
-        cmds.append(("Command","Description","Example"))
-        cmds.append(("!settitle &lt;title&gt;","Sets the stream title to 'title'","!settitle This is a stream about games!"))
-        cmds.append(("!setgame &lt;game&gt;","Sets the stream game to 'game'","!setgame Deus Ex"))
+        cmds = [
+            ("Command","Description","Example"),
+            ("!settitle <title>","Sets the stream title to 'title'","!settitle This is a stream about games!"),
+            ("!setgame <game>","Sets the stream game to 'game'","!setgame Deus Ex")
+        ]
 
         tables.append(cmds)
 

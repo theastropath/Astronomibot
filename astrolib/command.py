@@ -24,7 +24,7 @@ class Command:
     def paramsChanged(self):
         return False
 
-    def getState(Self):
+    def getState(self):
         return None
 
     def getDescription(self,full=False):
