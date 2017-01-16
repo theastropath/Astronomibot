@@ -37,13 +37,13 @@ class TwitchApi:
         stream = response.read().decode('utf-8')
         return json.loads(stream)
 
-    def setGame(self, channeId, game):
-        if channeId is None:
+    def setGame(self, channelId, game):
+        if channelId is None:
             return False
 
         data = {"channel": {"game": game}}
         try:
-            result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channeId, data, 'PUT')
+            result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channelId, data, 'PUT')
             return True
 
         except urllib.error.HTTPError as e:
@@ -51,13 +51,13 @@ class TwitchApi:
 
         return False
 
-    def setTitle(self, channeId, title):
-        if channeId is None:
+    def setTitle(self, channelId, title):
+        if channelId is None:
             return False
 
         data = {"channel": {"status": title}}
         try:
-            result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channeId, data, 'PUT')
+            result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channelId, data, 'PUT')
             return True
 
         except urllib.error.HTTPError as e:
@@ -102,8 +102,8 @@ class TwitchApi:
 
         return None
 
-    def isHosting(self, channeId):
-        if channeId is None:
+    def isHosting(self, channelId):
+        if channelId is None:
             return False
 
         try:
@@ -116,7 +116,7 @@ class TwitchApi:
         return False
 
     def getCurrentlyHostedChannel(self, channelId):
-        if channeId is None:
+        if channelId is None:
             return None
 
         try:
