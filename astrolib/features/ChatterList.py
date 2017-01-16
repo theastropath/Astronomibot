@@ -1,4 +1,3 @@
-import json
 from astrolib.feature import Feature
 
 class ChatterList(Feature):

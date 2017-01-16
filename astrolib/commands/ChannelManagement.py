@@ -1,8 +1,6 @@
 from astrolib.command import Command
 from astrolib import MOD
 
-import json
-
 class ChannelManagement(Command):
 
     def __init__(self,bot,name):

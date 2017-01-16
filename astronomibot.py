@@ -3,7 +3,6 @@
 from time import sleep
 import time
 from socket import *
-import json
 from datetime import datetime
 import os
 import sys
