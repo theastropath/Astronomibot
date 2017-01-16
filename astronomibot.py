@@ -76,7 +76,7 @@ class Bot:
     @property
     def channelId(self):
         if self._channelId is None:
-            self._channelId = self.api.getChannelId(self.channel[1:])
+            self._channelId = self.api.getChannelId()
         return self._channelId
 
     def getCommands(self):

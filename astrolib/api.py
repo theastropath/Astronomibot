@@ -90,11 +90,10 @@ class TwitchApi:
 
         return None
 
-    def getChannelId(self, channelName):
+    def getChannelId(self):
         try:
-            channels = self._idedRequest("https://api.twitch.tv/kraken/channels/"+channelName)
-            channelsVal = json.loads(channels)
-            chanId = channelsVal['_id']
+            channels = self._authRequest("https://api.twitch.tv/kraken/channel")
+            chanId = channels['_id']
             return chanId
 
         except urllib.error.HTTPError as e:
