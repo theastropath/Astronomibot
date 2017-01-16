@@ -4,7 +4,6 @@ from time import sleep
 import time
 from socket import *
 import json
-from urllib.request import urlopen
 from datetime import datetime
 import os
 import sys
@@ -12,6 +11,7 @@ import imp
 import traceback
 
 from astrolib import EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr
+from astrolib.api import TwitchApi
 
 twitchIrcServer = "irc.twitch.tv"
 twitchIrcPort = 6667
@@ -56,7 +56,7 @@ class Bot:
             print ("Log file is not present")
 
 
-    def __init__(self, channel):
+    def __init__(self, channel, nick, pollFreq, api):
         self.modList = [] #List of all moderators for the channel
         self.commands = []
         self.features = []
@@ -65,15 +65,19 @@ class Bot:
         self.logs = []
         self.logFile = "ActionLog.txt"
         self.channel = channel
+        self._channelId = None
         self.regulars = []
         self.pollFreq = pollFreq
         self.name = nick
-        self.clientId = clientId
-        self.clientSecret = clientSecret
-        self.accessToken = accessToken
+        self.api = api
         self.importLogs()
 
-
+    # lazily loaded channel ID
+    @property
+    def channelId(self):
+        if self._channelId is None:
+            self._channelId = self.api.getChannelId(self.channel[1:])
+        return self._channelId
 
     def getCommands(self):
         return self.commands
@@ -217,13 +221,6 @@ class IrcMessage:
 
 
 
-
-def getModList(channelName):
-    #Web method, will keep as a backup, but not used for now
-    response = urlopen('http://tmi.twitch.tv/group/user/'+channelName[1:]+'/chatters')
-    chatters = response.read().decode()
-    return (json.loads(chatters)["chatters"]["moderators"])
-
 def handleNoticeMessage(msg):
     if "The moderators of this room are:" in msg.msg:
         #List of mods can be updated
@@ -309,7 +306,8 @@ if __name__ == "__main__":
         exit(1)
 
     sock = connectToServer()
-    bot = Bot(channel)
+    api = TwitchApi(clientId, accessToken, clientSecret)
+    bot = Bot(channel, nick, pollFreq, api)
     leftover = bytes()
 
     while(running):
