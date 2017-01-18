@@ -1,6 +1,4 @@
-import json
 import re
-from urllib.request import urlopen
 import time
 from astrolib.command import Command
 from astrolib import EVERYONE
@@ -98,7 +96,7 @@ class SpamProtection(Command):
     def emoteSpamCheck(self,msg,userLevel):
         emoteCount = 0
 
-        for emote in self.emoteList.keys():
+        for emote in self.emoteList:
             matches = self.emoteList[emote].findall(msg.msg)
             if len(matches)>0:
                 emoteCount = emoteCount + len(matches)
@@ -168,7 +166,6 @@ class SpamProtection(Command):
         return response
 
     def loadTwitchEmotes(self):
-        response = urlopen('https://api.twitch.tv/kraken/chat/emoticons')
-        emotes = json.loads(response.read().decode('utf-8'))['emoticons']
+        emotes = self.bot.api.getTwitchEmotes()
         for emote in emotes:
             self.emoteList[emote["regex"]] = re.compile(emote["regex"])

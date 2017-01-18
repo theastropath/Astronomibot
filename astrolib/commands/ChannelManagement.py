@@ -1,9 +1,6 @@
 from astrolib.command import Command
 from astrolib import MOD
 
-import json
-import urllib
-
 class ChannelManagement(Command):
 
     def __init__(self,bot,name):
@@ -44,41 +41,6 @@ class ChannelManagement(Command):
     def setParam(self, param, val):
         pass
 
-    def setGame(self,game):
-        DATA = json.dumps({"channel": {"game": game}}).encode("utf-8")
-        req = urllib.request.Request(url="https://api.twitch.tv/kraken/channels/72962886", data=DATA, method='PUT')
-        req.add_header('Client-ID',self.bot.clientId)
-        req.add_header('Accept',"application/vnd.twitchtv.v5+json")
-        req.add_header('Authorization',"OAuth "+self.bot.accessToken)
-        req.add_header('Content-Type',"application/json")
-
-        try:
-            response = urllib.request.urlopen(req)
-            stream = response.read().decode()
-            streamState = json.loads(stream)
-            return True
-        except urllib.error.HTTPError as e:
-            print (e.read())
-        return False
-
-    def setTitle(self,title):
-        DATA = json.dumps({"channel": {"status": title}}).encode("utf-8")
-        req = urllib.request.Request(url="https://api.twitch.tv/kraken/channels/72962886", data=DATA,method='PUT')
-        req.add_header('Client-ID',self.bot.clientId)
-        req.add_header('Accept',"application/vnd.twitchtv.v5+json")
-        req.add_header('Authorization',"OAuth "+self.bot.accessToken)
-        req.add_header('Content-Type',"application/json")
-
-        try:
-            response = urllib.request.urlopen(req)
-            stream = response.read().decode()
-            streamState = json.loads(stream)
-            return True
-        except urllib.error.HTTPError as e:
-            print (e.read())
-        return False
-
-
     def shouldRespond(self, msg, userLevel):
         if msg.messageType == 'PRIVMSG' and len(msg.msg)!=0 and userLevel>=MOD:
             fullmsg = msg.msg.split()
@@ -94,13 +56,13 @@ class ChannelManagement(Command):
 
         #print("Client ID is "+str(self.bot.clientId))
         #print ("Access Token is "+str(self.bot.accessToken))
-        if (fullmsg[0]=="!setgame"):
-            if (self.setGame(restOfMsg)):
+        if fullmsg[0] == "!setgame":
+            if self.bot.api.setGame(self.bot.channelId, restOfMsg):
                 textResponse = "Setting game to '"+restOfMsg+"'"
             else:
                 textResponse = "Failed to change game"
-        elif (fullmsg[0]=="!settitle"):
-            if (self.setTitle(restOfMsg)):
+        elif fullmsg[0] == "!settitle":
+            if self.bot.api.setTitle(self.bot.channelId, restOfMsg):
                 textResponse = "Setting stream title to '"+restOfMsg+"'"
             else:
                 textResponse = "Failed to change stream title"

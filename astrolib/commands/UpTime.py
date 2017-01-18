@@ -1,5 +1,3 @@
-import urllib
-import json
 import calendar
 import time
 from datetime import timedelta
@@ -31,37 +29,14 @@ class UpTime(Command):
 
         return False
 
-    def isStreamOnline(self,channelName):
-        req = urllib.request.Request("https://api.twitch.tv/kraken/streams/"+channelName)
-        req.add_header('Client-ID',self.bot.clientId)
-        try:
-            response = urllib.request.urlopen(req)
-            stream = response.read().decode()
-            streamState = json.loads(stream)
-            if streamState['stream']!=None:
-                return True
-        except:
-            pass
-
-        return False
-
-    def getStreamLiveTime(self,channelName):
-        req = urllib.request.Request("https://api.twitch.tv/kraken/streams/"+channelName)
-        req.add_header('Client-ID',self.bot.clientId)
-        try:
-            response = urllib.request.urlopen(req)
-            stream = response.read().decode()
-            streamState = json.loads(stream)
-            if streamState['stream']!=None:
-                liveTime = streamState['stream']['created_at']
-                startTime = time.strptime(liveTime, '%Y-%m-%dT%H:%M:%SZ')
-                epochStartTime = calendar.timegm(startTime)
-                curEpochTime = time.time()
-                liveFor = curEpochTime-epochStartTime
-                liveDelta = str(timedelta(seconds=int(liveFor)))
-                self.lastKnownUptime = liveDelta
-        except:
-            pass
+    def getStreamLiveTime(self, channelName):
+        startTime = self.bot.api.getStreamLiveTime(channelName)
+        if startTime is not None:
+            epochStartTime = calendar.timegm(startTime)
+            curEpochTime = time.time()
+            liveFor = curEpochTime - epochStartTime
+            liveDelta = str(timedelta(seconds=int(liveFor)))
+            self.lastKnownUptime = liveDelta
 
         return self.lastKnownUptime
 
@@ -69,7 +44,7 @@ class UpTime(Command):
         tables = []
 
         live = "No"
-        if self.isStreamOnline(self.bot.channel[1:]):
+        if self.bot.api.isStreamOnline(self.bot.channel[1:]):
             live = "Yes"
 
         state=[]
@@ -99,12 +74,12 @@ class UpTime(Command):
         response = ""
         channelName=self.bot.channel[1:]
 
-        if not self.isStreamOnline(channelName):
+        if not self.bot.api.isStreamOnline(channelName):
             response = "Stream is not live"
         else:
-            response = "Stream has been live for "+str(self.getStreamLiveTime(channelName))
+            response = "Stream has been live for %s" % self.getStreamLiveTime(channelName)
 
-        ircResponse = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
+        ircResponse = "PRIVMSG %s :%s\n" % (self.bot.channel, response)
         sock.sendall(ircResponse.encode('utf-8'))
 
         return response

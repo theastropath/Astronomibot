@@ -1,5 +1,3 @@
-import urllib
-import json
 import os
 from astrolib.feature import Feature
 
@@ -19,33 +17,32 @@ class AutoHost(Feature):
         self.hostList = []
         self.hostListFile = "AutoHostList.txt"
 
-        self.channelId=0
         self.hostChannel = ""
-        self.hosting =  self.currentlyHosting(self.bot.channel[1:])
+        self.hosting =  self.bot.api.isHosting(self.bot.channelId)
 
         if self.hosting:
-            self.hostChannel = self.currentHostedChannel(self.bot.channel[1:])
+            self.hostChannel = self.bot.api.getCurrentlyHostedChannel(self.bot.channelId) or ""
 
 
 
     def outputHostList(self):
-            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+self.hostListFile,mode='w',encoding="utf-8") as f:
-                for channel in self.hostList:
-                    f.write(channel.lower()+"\n")
+        hostListDir = os.path.join(configDir, self.bot.channel[1:])
+        os.makedirs(hostListDir, exist_ok=True)
+        hostListPath = os.path.join(hostListDir, self.hostListFile)
+
+        with open(hostListPath,mode='w',encoding="utf-8") as f:
+            for channel in self.hostList:
+                f.write(channel.lower()+"\n")
 
     def readHostList(self):
         #Load regulars
-        if not os.path.exists(configDir+os.sep+self.bot.channel[1:]):
-            os.makedirs(configDir+os.sep+self.bot.channel[1:])
+        hostListPath = os.path.join(configDir, self.bot.channel[1:], self.hostListFile)
 
         try:
-            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+self.hostListFile,encoding='utf-8') as f:
-                self.hostList=[]
-                for line in f:
-                    channel = line.strip()
-                    self.hostList.append(channel)
+            with open(hostListPath,encoding='utf-8') as f:
+                self.hostList = [line.strip() for line in f]
         except FileNotFoundError:
-            print ("Host List file is not present")
+            print("Host List file is not present: %s" % hostListPath)
 
 
     def getParams(self):
@@ -61,81 +58,8 @@ class AutoHost(Feature):
         elif param == 'HostLength':
             self.hostLength = float(val) / self.hostCheckFrequency
 
-
-    def isStreamOnline(self,channelName):
-        req = urllib.request.Request("https://api.twitch.tv/kraken/streams/"+channelName)
-        req.add_header('Client-ID',self.bot.clientId)
-        try:
-            response = urllib.request.urlopen(req)
-            stream = response.read().decode()
-            streamState = json.loads(stream)
-            if streamState['stream']!=None:
-                return True
-        except:
-            pass
-
-        return False
-
-    def currentlyHosting(self,channelName):
-        if self.channelId==0:
-            #Gotta get the channel ID first...
-            req = urllib.request.Request("https://api.twitch.tv/kraken/channels/"+channelName)
-            req.add_header('Client-ID',self.bot.clientId)
-            try:
-                response = urllib.request.urlopen(req)
-                channels = response.read().decode()
-                channelsVal = json.loads(channels)
-                chanId = channelsVal['_id']
-                self.channelId = chanId
-            except:
-                pass
-
-        if self.channelId!=0:
-            #Check to see if we are hosting another channel
-            req = urllib.request.Request("https://tmi.twitch.tv/hosts?include_logins=1&host="+str(self.channelId))
-            try:
-                response = urllib.request.urlopen(req)
-                hosts = response.read().decode()
-                hostsList = json.loads(hosts)
-                if 'target_login' in hostsList['hosts'][0].keys():
-                    return True
-
-            except:
-                pass
-
-        return False
-
-    def currentHostedChannel(self,channelName):
-        if self.channelId==0:
-            #Gotta get the channel ID first...
-            req = urllib.request.Request("https://api.twitch.tv/kraken/channels/"+channelName)
-            req.add_header('Client-ID',self.bot.clientId)
-            try:
-                response = urllib.request.urlopen(req)
-                channels = response.read().decode()
-                channelsVal = json.loads(channels)
-                chanId = channelsVal['_id']
-                self.channelId = chanId
-            except:
-                pass
-
-        if self.channelId!=0:
-            #Check to see if we are hosting another channel
-            req = urllib.request.Request("https://tmi.twitch.tv/hosts?include_logins=1&host="+str(self.channelId))
-            try:
-                response = urllib.request.urlopen(req)
-                hosts = response.read().decode()
-                hostsList = json.loads(hosts)
-                if 'target_login' in hostsList['hosts'][0].keys():
-                    return hostsList['hosts'][0]['target_login']
-
-            except:
-                pass
-
-        return ""
-
     def sendMessage(self,message,sock):
-        msg = "PRIVMSG "+self.bot.channel+" :"+message+"\n"
+        msg = "PRIVMSG %s :%s\n" % (self.bot.channel, message)
         sock.sendall(msg.encode('utf-8'))
 
     def startHosting(self,hostChannel,sock):
@@ -163,7 +87,7 @@ class AutoHost(Feature):
 
             self.hostUpdate = self.hostCheckFrequency
 
-            if not self.isStreamOnline(self.bot.channel[1:]):
+            if not self.bot.api.isStreamOnline(self.bot.channel[1:]):
                 #Stream must be offline for several checks in a row
                 #(To prevent an occasional lookup failure from hosting during a stream)
                 self.offlineTime += 1
@@ -177,7 +101,7 @@ class AutoHost(Feature):
                 if self.hosting:
                     #Make sure we are still hosting a channel
                     #If not, mark us as not hosting
-                    if not self.currentlyHosting(self.bot.channel[1:]):
+                    if not self.bot.api.isHosting(self.bot.channelId):
                         self.stopHosting(sock)
                     else:
                         if self.hostTime > self.hostLength:
@@ -189,7 +113,7 @@ class AutoHost(Feature):
                 #Check for channels in host list that are online
                 if not self.hosting or checkForNewHost:
                     for channel in self.hostList:
-                        if self.isStreamOnline(channel):
+                        if self.bot.api.isStreamOnline(channel):
                             if not checkForNewHost: #IN the normal case, just host the highest priority stream
                                 self.startHosting(channel,sock)
                                 return
