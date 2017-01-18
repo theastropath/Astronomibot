@@ -39,8 +39,11 @@ a client secret that you can enter into the fourth line of the creds file.
 Access Token:
 ---------------
 Navigate to:
+
 https://api.twitch.tv/kraken/oauth2/authorize?response_type=token&client_id=<Application Client ID>&redirect_uri=http://localhost&scope=channel_editor channel_read
+
 Log in as the channel owner, and you'll be sent to an localhost address that will look like this, containing your access token:
+
 http://localhost/#access_token=<Access Token>&scope=channel_editor
 
 Grab the access token from the URL and enter it as the fifth line in your creds file.
