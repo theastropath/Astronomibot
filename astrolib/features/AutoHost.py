@@ -41,6 +41,7 @@ class AutoHost(Feature):
         try:
             with open(hostListPath,encoding='utf-8') as f:
                 self.hostList = [line.strip() for line in f]
+                self.hostList = list(filter(None,self.hostList))
         except FileNotFoundError:
             print("Host List file is not present: %s" % hostListPath)
 
