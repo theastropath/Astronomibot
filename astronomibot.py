@@ -310,15 +310,18 @@ if __name__ == "__main__":
 
     sock = connectToServer()
     bot = Bot(channel)
+    leftover = bytes()
 
     while(running):
-        message = ""
+        data = None
 
         #Get any commands or features
         bot.checkCommandsAndFeatures()
 
         try:
-            message = sock.recv(recvAmount)
+            data = sock.recv(recvAmount)
+            if leftover:
+                data = leftover + data
         except BlockingIOError:
             pass
         except ConnectionAbortedError:
@@ -332,10 +335,18 @@ if __name__ == "__main__":
             sock = connectToServer()
 
 
-        if message is not "":
-            messages = message.decode().rstrip().split("\n")
-            for m in messages:
-                msg = IrcMessage(m)
+        if data is not None:
+            index = 0
+            while True:
+                next_index = data.find(b'\n', index)
+                if next_index == -1:
+                    # handle (unlikely) case where received data contains half a message
+                    leftover = data[index:]
+                    break
+                message = data[index:next_index].decode(encoding='utf-8', errors='ignore')
+                index = next_index + 1
+
+                msg = IrcMessage(message)
 
                 if msg.messageType == 'PRIVMSG':
                     logMessage(msg.sender,msg.msg)
