@@ -98,8 +98,15 @@ class AutoHost(Feature):
                 else:
                     self.offlineTime = 3 #Prevent it from rolling over during long periods of offline
 
+
+
                 #Stream is offline.
                 if self.hosting:
+                    #Check if hosted channel is still online, and stop hosting if not
+                    if not self.bot.api.isStreamOnline(self.hostChannel):
+                        #Hosted channel is no longer online, stop hosting
+                        self.stopHosting(sock)
+
                     #Make sure we are still hosting a channel
                     #If not, mark us as not hosting
                     if not self.bot.api.isHosting(self.bot.channelId):
