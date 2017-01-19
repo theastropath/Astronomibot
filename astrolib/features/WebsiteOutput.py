@@ -169,7 +169,8 @@ body {{ background: #{background} }}
                 for file in os.listdir(self.outputLocation+os.sep+self.bot.channel[1:]):
                     filepath = self.outputLocation+os.sep+self.bot.channel[1:]+os.sep+file
                     with open(filepath,'rb') as f:
-                        ftp.storbinary("STOR "+file,f)
+                        ftp.storbinary("STOR "+file+".tmp",f)
+                    ftp.rename(file+".tmp",file)
                 ftp.close()
             except ftplib.all_errors as e:
                 print("Encountered an error trying to deal with the FTP connection: "+str(e))
