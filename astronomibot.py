@@ -308,12 +308,17 @@ if __name__ == "__main__":
     api = TwitchApi(clientId, accessToken, clientSecret)
     bot = Bot(channel, nick, pollFreq, api)
     leftover = bytes()
+    commandCheck=0
 
     while(running):
         data = None
 
-        #Get any commands or features
-        bot.checkCommandsAndFeatures()
+        if commandCheck<=0:
+            #Get any commands or features
+            bot.checkCommandsAndFeatures()
+            commandCheck=600 #5 Minutes
+        else:
+            commandCheck-=1
 
         try:
             data = sock.recv(recvAmount)
