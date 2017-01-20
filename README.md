@@ -48,6 +48,9 @@ http://localhost/#access_token=<Access Token>&scope=channel_editor
 
 Grab the access token from the URL and enter it as the fifth line in your creds file.
 
+
+Alternately, use the token generator available at https://twitchapps.com/tokengen
+
 Dependencies:
 -------------
  * milight

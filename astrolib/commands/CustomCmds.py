@@ -31,6 +31,17 @@ class CustomCommand:
             refReplaceTerm=referenceCountTerm+"("+refReplaceTerm+")"
             response = response.replace(refReplaceTerm,str(refCount))
 
+        if "CustomApi" in self.allCmds.bot.commands:
+            customApi = self.allCmds.bot.commands[self.allCmds.bot.commands.index("CustomApi")]
+            for api in customApi.customApis.keys():
+                silentApi = "$SILENTAPI("+api+")"
+                replaceApi = "$CUSTOMAPI("+api+")"
+
+                if silentApi in response or replaceApi in response:
+                    apiResponse = customApi.customApis[api].getApiResponse()
+                    response = response.replace(silentApi,"")
+                    response = response.replace(replaceApi,apiResponse)
+
         return response
 
     def getResponse(self,msg):
