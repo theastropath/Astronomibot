@@ -47,7 +47,7 @@ class TwitchApi:
             return True
 
         except urllib.error.HTTPError as e:
-            print(e)
+            print("setGame: "+str(e))
 
         return False
 
@@ -61,7 +61,7 @@ class TwitchApi:
             return True
 
         except urllib.error.HTTPError as e:
-            print(e)
+            print("setTitle: "+str(e))
 
         return False
 
@@ -74,7 +74,7 @@ class TwitchApi:
             return streamState['stream'] is not None
 
         except urllib.error.HTTPError as e:
-            print(e)
+            print("isStreamOnline "+str(e))
 
         return False
 
@@ -86,7 +86,7 @@ class TwitchApi:
                 return time.strptime(liveTime, '%Y-%m-%dT%H:%M:%SZ')
 
         except urllib.error.HTTPError as e:
-            print(e)
+            print("getStreamLiveTime: "+str(e))
 
         return None
 
@@ -97,7 +97,7 @@ class TwitchApi:
             return chanId
 
         except urllib.error.HTTPError as e:
-            print(e)
+            print("getChannelId: "+str(e))
 
         return None
 
@@ -110,7 +110,7 @@ class TwitchApi:
             return 'target_login' in hostsList['hosts'][0]
 
         except urllib.error.HTTPError as e:
-            print(e)
+            print("isHosting: "+str(e))
 
         return False
 
@@ -124,7 +124,7 @@ class TwitchApi:
             return host.get('target_login', None)
 
         except urllib.error.HTTPError as e:
-            print(e)
+            print("getCurrentlyHostedChannel: "+str(e))
 
         return None
 
@@ -135,18 +135,21 @@ class TwitchApi:
             return chatlist['chatters']
 
         except urllib.error.HTTPError as e:
-            print(e)
-
+            #This API is particularly prone to responding with a 503,
+            #so we don't want to constantly be printing the error out
+            #print("getChatters: "+str(e)) 
+            pass
         except urllib.error.URLError as e:
-            print(e)
+            print("getChatters: "+str(e))
 
         return None
 
     def getAllChatters(self, channelName):
-        allchatters = []
+        allchatters = None 
         chatterMap = self.getChatters(channelName)
 
         if chatterMap:
+            allchatters = []
             for chatters in chatterMap.values():
                 allchatters.extend(chatters)
 
