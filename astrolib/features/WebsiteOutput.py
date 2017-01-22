@@ -186,7 +186,7 @@ body {{ background: #{background} }}
         self.ftpPass=""
         self.ftpUrl=""
         self.ftpDir=""
-        self.refreshFreq=(bot.pollFreq * self.htmlUpdateFreq)+10
+        self.refreshFreq=int((bot.pollFreq * self.htmlUpdateFreq)/2)
         try:
             with open(ftpCredFile) as f:
                 self.ftpUrl = f.readline().strip('\n')
