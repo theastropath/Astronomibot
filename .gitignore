@@ -2,4 +2,7 @@
 *.pyc
 *.cfg
 *.html
+*.swp
+.*
+*~
 __pycache__
