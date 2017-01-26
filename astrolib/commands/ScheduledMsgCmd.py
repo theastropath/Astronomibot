@@ -1,5 +1,9 @@
 from astrolib.command import Command
 from astrolib import MOD
+import os 
+
+configDir="config"
+scheduleFile = "ScheduledMsgs.txt"
 
 class ScheduledMsg():
 
@@ -24,6 +28,13 @@ class ScheduledMsg():
             response="Command "+self.cmd+" has not been configured"
         #   command.getResponse("")
         return response
+
+    def export(self):
+        resp = self.cmd+" "+str(self.freqInMins())+" "+str(self.numBetween)+" "+str(self.started)
+        return resp
+
+    def freqInMins(self):
+        return self.freq//120
 
     def start(self):
         self.started=True
@@ -72,6 +83,34 @@ class ScheduledMsgCmd(Command):
         else:
             print("!schedulemsg is already registered to ",self.bot.getCmdOwner("!schedulemsg"))
 
+        self.importScheduledMsgs()
+
+    def getDescription(self, full=False):
+        if full:
+            return "Schedule already created custom commands (See CustomCmds page) to be run on a periodic basis.  Messages can be configured to either run at a purely time based interval, or time based, as well as requiring a certain number of messages to be sent in chat before it will be repeated."
+        else:
+            return "Schedule messages to be run periodically"
+
+    def getState(self):
+        tables = []
+
+        cmds = []
+        cmds.append(("Command","Description","Example"))
+        cmds.append(("create","Creates a new scheduled message","!schedulemsg <command name> create <time between messages> <Messages required between>"))
+        cmds.append(("delete","Deletes a scheduled message","!schedulemsg <command name> delete"))
+        cmds.append(("start","Starts an already created scheduled message","!schedulemsg <command name> start"))
+        cmds.append(("stop","Stops an already created scheduled message","!schedulemsg <command name> stop"))
+
+
+        msgs = []
+        msgs.append(("Scheduled Command","Frequency (Minutes)","Messages Between","Running"))
+        for msg in self.schedMsgs.keys():
+            msgs.append((self.schedMsgs[msg].cmd, self.schedMsgs[msg].freqInMins(), self.schedMsgs[msg].numBetween, self.schedMsgs[msg].started))
+
+        tables.append(cmds)
+        tables.append(msgs)
+   
+        return tables
 
     def getParams(self):
         params = []
@@ -79,6 +118,30 @@ class ScheduledMsgCmd(Command):
 
     def setParam(self, param, val):
         pass
+
+    def exportScheduledMsgs(self):
+        msgStorageFile = configDir+os.sep+self.bot.channel[1:]+os.sep+scheduleFile
+        with open(msgStorageFile,mode='w',encoding='utf-8') as f:
+            for schedMsg in self.schedMsgs.keys():
+                f.write(self.schedMsgs[schedMsg].export()+"\n")
+
+    def importScheduledMsgs(self):
+        msgStorageFile = configDir+os.sep+self.bot.channel[1:]+os.sep+scheduleFile
+        try:
+            with open(msgStorageFile,encoding='utf-8') as f:
+                for line in f:
+                    schedMsg = line.strip().split()
+                    if len(schedMsg)==4:
+                        cmdName = schedMsg[0]
+                        cmdFreq = int(schedMsg[1])
+                        cmdNumBetween = int(schedMsg[2])
+                        cmdStarted = (schedMsg[3]=="True")
+                        
+                        self.createSched(cmdName,cmdFreq,cmdNumBetween)
+                        if cmdStarted:
+                            self.startSched(cmdName)
+        except FileNotFoundError:
+            print (msgStorageFile+" is not present, no scheduled messages imported")
 
     def createSched(self,cmd,freq,msgBetween):
         response = "Scheduling command '"+cmd+"' to run every "+str(freq)+" minutes, with at least "+str(msgBetween)+" messages between"
@@ -89,21 +152,26 @@ class ScheduledMsgCmd(Command):
 
         self.schedMsgs[cmd]=ScheduledMsg(self.bot,cmd,tickFreq,msgBetween)
 
+        self.exportScheduledMsgs()
+
         return response
 
     def startSched(self,cmd):
         response = "Starting command '"+cmd+"'"
         self.schedMsgs[cmd].start()
+        self.exportScheduledMsgs()
         return response
 
     def stopSched(self,cmd):
         response = "Stopping command '"+cmd+"'"
         self.schedMsgs[cmd].stop()
+        self.exportScheduledMsgs()
         return response
 
     def deleteSched(self,cmd):
         response = "Deleting command '"+cmd+"'"
         del self.schedMsgs[cmd]
+        self.exportScheduledMsgs()
         return response
 
     def shouldRespond(self, msg, userLevel):

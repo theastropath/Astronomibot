@@ -158,6 +158,7 @@ class Bot:
                 self.commands.append(cmd(self,command))
                 print("Loaded command module '"+command+"'")
             except:
+                traceback.print_exc()
                 print("Couldn't load command module '"+command+"'")
 
         for feature in featureFiles:
@@ -168,6 +169,7 @@ class Bot:
                 self.features.append(feat(self,feature))
                 print("Loaded feature module '"+feature+"'")
             except:
+                traceback.print_exc()
                 print("Couldn't load feature module '"+feature+"'")
 
 
