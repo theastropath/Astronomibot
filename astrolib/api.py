@@ -65,6 +65,30 @@ class TwitchApi:
 
         return False
 
+    def getTitle(self,channelId):
+        if channelId is None:
+            return ""
+        try:
+            result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channelId)
+            return result["status"] if result else ""
+
+        except urllib.error.HTTPError as e:
+            print("getTitle: "+str(e))
+        return ""
+
+    def getChannelUrl(self,channelId):
+        if channelId is None:
+            return ""
+        try:
+            result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channelId)
+            return result["url"] if result else ""
+
+        except urllib.error.HTTPError as e:
+            print("getChannelUrl: "+str(e))
+        return ""
+
+
+
     def getTwitchEmotes(self):
         return self._pubRequest('https://api.twitch.tv/kraken/chat/emoticons')['emoticons']
 

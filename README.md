@@ -55,3 +55,4 @@ Dependencies:
 -------------
  * milight
  * webcolors
+ * tweepy
