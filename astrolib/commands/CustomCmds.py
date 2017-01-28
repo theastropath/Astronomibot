@@ -38,7 +38,7 @@ class CustomCommand:
                 replaceApi = "$CUSTOMAPI("+api+")"
 
                 if silentApi in response or replaceApi in response:
-                    apiResponse = customApi.customApis[api].getApiResponse()
+                    apiResponse = customApi.customApis[api].getApiResponse(afterCmd)
                     response = response.replace(silentApi,"")
                     response = response.replace(replaceApi,apiResponse)
 

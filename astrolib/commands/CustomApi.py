@@ -1,8 +1,6 @@
 from astrolib.command import Command
 from astrolib import MOD
-
-import urllib
-from urllib.request import urlopen
+import requests
 import os
 
 configDir = "config"
@@ -13,17 +11,26 @@ class Api():
         self.name = name
         self.address = address
 
-    def getApiResponse(self):
+    def getApiResponse(self,remainder):
+        splitRemain = remainder.split()
         response = ""
 
         try:
-            req = urllib.request.Request(self.address)
-            reqResp = urlopen(req)
-            response = reqResp.read().decode()
-        except urllib.error.HTTPError as e:
-            response = "[HTTP Error "+str(e.code)+"]"
+            
+            #Tacking on this set of headers gives us more freedom to use different apis
+            hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+                   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                   'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+                   'Accept-Encoding': 'none',
+                   'Accept-Language': 'en-US,en;q=0.8',
+                   'Connection': 'keep-alive'}
+            r = requests.get(self.address,headers=hdr)
+            r.raise_for_status()
+            response = r.text
+        except requests.exceptions.HTTPError as e:
+            response = "[HTTP Error "+str(e.response.status_code)+"]"
         except:
-            response = "Invalid API"
+            response = "[Invalid API]"
 
         return response 
 
