@@ -204,18 +204,40 @@ class IrcMessage:
         self.sender = ''
         self.channel = ''
         self.msg = ''
+
         if messageType == 'PRIVMSG':
             breakdown = rest.split(None, 1)
             self.sender = prefix.split('!', 1)[0][1:]
             self.channel = breakdown[0]
             self.msg = breakdown[1][1:] if len(breakdown) > 1 else ''
+
         elif messageType == 'PING':
             self.msg = rest
+
         elif messageType == 'NOTICE':
             breakdown = rest.split(None, 1)
             self.sender = prefix[1:]
             self.channel = breakdown[0]
             self.msg = breakdown[1][1:] if len(breakdown) > 1 else ''
+
+        elif messageType == 'JOIN':
+            self.sender = prefix.split('!', 1)[0][1:]
+            self.channel = rest
+            self.msg = rest
+
+        elif messageType == 'CAP':
+            breakdown = rest.split(None, 2)
+            self.sender = prefix[1:]
+            # 'CAP * ACK'
+            self.messageType = ' '.join((messageType, breakdown[0], breakdown[1]))
+            self.msg = breakdown[2]
+
+        elif messageType.isdecimal():
+            # motd and such
+            breakdown = rest.split(None, 1)
+            self.receiver = breakdown[0]
+            self.sender = prefix[1:]
+            self.msg = breakdown[1][1:]
 
         if not self.msg:
             self.messageType = 'INVALID'
@@ -249,34 +271,27 @@ def connectToServer():
 
     sock = socket(AF_INET, SOCK_STREAM)
 
-    connSuccess = False;
+    connSuccess = False
 
     while not connSuccess:
         try:
             connSuccess = True
             sock.connect((twitchIrcServer,twitchIrcPort))
         except:
-            print ("Connection failed.  Retry...")
             connSuccess = False
+            print ("Connection failed.  Retry...")
             sleep(10) #Wait 10 seconds, then try again
 
-    sock.sendall(b"PASS "+passw.encode('ascii')+b"\n")
-    sock.sendall(b"NICK "+nick.encode('ascii')+b"\n")
-    sock.sendall(b"JOIN "+channel.encode('ascii')+b"\n")
-    sock.sendall(b"CAP REQ :twitch.tv/commands\n");
-    sock.sendall(b"CAP REQ :twitch.tv/membership\n");
-
-
-    sleep (1) #Wait for responses to roll in
-
-    motd = sock.recv(recvAmount)
-    print("---------------------------")
-    print (str(motd))
-    print("---------------------------")
-
-    sock.setblocking(0)
+    sock.sendall(
+        b"PASS "+passw.encode('ascii')+b"\n"+
+        b"NICK "+nick.encode('ascii')+b"\n"+
+        b"JOIN "+channel.encode('ascii')+b"\n"+
+        b"CAP REQ :twitch.tv/commands\n"+
+        b"CAP REQ :twitch.tv/membership\n")
 
     modUpdate = 1 #Start at 1 so that it will grab the mod list on the first pass
+
+    sock.settimeout(pollFreq)
 
     return sock
 
@@ -312,7 +327,7 @@ if __name__ == "__main__":
     leftover = bytes()
     commandCheck=0
 
-    while(running):
+    while running:
         data = None
 
         if commandCheck<=0:
@@ -327,6 +342,8 @@ if __name__ == "__main__":
             if leftover:
                 data = leftover + data
         except BlockingIOError:
+            pass
+        except timeout:
             pass
         except ConnectionAbortedError:
             print ("Connection got aborted.  Reconnecting")
@@ -354,6 +371,18 @@ if __name__ == "__main__":
 
                 if msg.messageType == 'PRIVMSG':
                     logMessage(msg.sender,msg.msg)
+                elif msg.messageType == '375':
+                    # motd start
+                    print("---------------------------")
+                    print(msg.msg)
+                elif msg.messageType == '372':
+                    # motd
+                    print(msg.msg)
+                elif msg.messageType == '376':
+                    # motd end
+                    print(msg.msg)
+                    print("---------------------------")
+
 
                 for command in bot.getCommands():
                     if command.shouldRespond(msg,bot.getUserLevel(msg.sender)):
@@ -388,6 +417,5 @@ if __name__ == "__main__":
 
 
 
-        sleep(pollFreq)
     print ("DONE!")
     sock.close()
