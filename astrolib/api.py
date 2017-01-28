@@ -1,41 +1,37 @@
 import time
 import json
-import urllib
-from urllib.request import urlopen
 from urllib.parse import urlencode
+from requests import Session
+from requests.exceptions import HTTPError, InvalidURL
 
 class TwitchApi:
     def __init__(self, clientId, accessToken, clientSecret):
         self.clientId = clientId
         self.accessToken = accessToken
         self.clientSecret = clientSecret
+        self.session = Session()
 
     def _pubRequest(self, url):
-        response = urlopen(url)
-        return json.loads(response.read().decode('utf-8'))
+        response = self.session.get(url)
+        return json.loads(response.text)
 
     def _idedRequest(self, url):
-        req = urllib.request.Request(url)
-        req.add_header('Client-ID', self.clientId)
-
-        response = urllib.request.urlopen(req)
-        stream = response.read().decode()
-        result = json.loads(stream)
+        response = self.session.get(url, headers={'Client-ID': self.clientId})
+        result = json.loads(response.text)
         return result
 
     def _authRequest(self, url, data=None, method='GET'):
         if data is not None:
             data = json.dumps(data).encode('utf-8')
 
-        req = urllib.request.Request(url=url, data=data, method=method)
-        req.add_header('Client-ID', self.clientId)
-        req.add_header('Accept', "application/vnd.twitchtv.v5+json")
-        req.add_header('Authorization', "OAuth "+self.accessToken)
-        req.add_header('Content-Type', "application/json")
+        response = self.session.request(method, url, data=data, headers={
+            'Client-ID': self.clientId,
+            'Accept': 'application/vnd.twitchtv.v5+json',
+            'Authorization': 'OAuth '+self.accessToken,
+            'Content-Type': 'application/json'
+        })
 
-        response = urllib.request.urlopen(req)
-        stream = response.read().decode('utf-8')
-        return json.loads(stream)
+        return json.loads(response.text)
 
     def setGame(self, channelId, game):
         if channelId is None:
@@ -46,7 +42,7 @@ class TwitchApi:
             result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channelId, data, 'PUT')
             return True
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             print("setGame: "+str(e))
 
         return False
@@ -60,7 +56,7 @@ class TwitchApi:
             result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channelId, data, 'PUT')
             return True
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             print("setTitle: "+str(e))
 
         return False
@@ -72,7 +68,7 @@ class TwitchApi:
             result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channelId)
             return result["status"] if result else ""
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             print("getTitle: "+str(e))
         return ""
 
@@ -83,7 +79,7 @@ class TwitchApi:
             result = self._authRequest("https://api.twitch.tv/kraken/channels/%s" % channelId)
             return result["url"] if result else ""
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             print("getChannelUrl: "+str(e))
         return ""
 
@@ -97,7 +93,7 @@ class TwitchApi:
             streamState = self._idedRequest("https://api.twitch.tv/kraken/streams/"+channelName)
             return streamState['stream'] is not None
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             print("isStreamOnline "+str(e))
 
         return False
@@ -109,7 +105,7 @@ class TwitchApi:
                 liveTime = streamState['stream']['created_at']
                 return time.strptime(liveTime, '%Y-%m-%dT%H:%M:%SZ')
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             print("getStreamLiveTime: "+str(e))
 
         return None
@@ -120,7 +116,7 @@ class TwitchApi:
             chanId = channels['_id']
             return chanId
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             print("getChannelId: "+str(e))
 
         return None
@@ -133,7 +129,7 @@ class TwitchApi:
             hostsList = self._pubRequest("https://tmi.twitch.tv/hosts?"+urlencode({'include_logins': '1', 'host': channelId}))
             return 'target_login' in hostsList['hosts'][0]
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             print("isHosting: "+str(e))
 
         return False
@@ -147,7 +143,7 @@ class TwitchApi:
             host = hostsList['hosts'][0]
             return host.get('target_login', None)
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             print("getCurrentlyHostedChannel: "+str(e))
 
         return None
@@ -158,18 +154,18 @@ class TwitchApi:
 
             return chatlist['chatters']
 
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             #This API is particularly prone to responding with a 503,
             #so we don't want to constantly be printing the error out
-            #print("getChatters: "+str(e)) 
+            #print("getChatters: "+str(e))
             pass
-        except urllib.error.URLError as e:
+        except InvalidURL as e:
             print("getChatters: "+str(e))
 
         return None
 
     def getAllChatters(self, channelName):
-        allchatters = None 
+        allchatters = None
         chatterMap = self.getChatters(channelName)
 
         if chatterMap:
