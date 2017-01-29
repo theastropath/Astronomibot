@@ -2,7 +2,7 @@ import time
 import json
 from urllib.parse import urlencode
 from requests import Session
-from requests.exceptions import HTTPError, InvalidURL
+from requests.exceptions import HTTPError, InvalidURL, ConnectionError
 
 class TwitchApi:
     def __init__(self, clientId, accessToken, clientSecret):
@@ -94,6 +94,9 @@ class TwitchApi:
             return streamState['stream'] is not None
 
         except HTTPError as e:
+            print("isStreamOnline "+str(e))
+
+        except ConnectionError as e:
             print("isStreamOnline "+str(e))
 
         return False

@@ -5,6 +5,7 @@ from datetime import datetime
 import time
 from html import escape
 from astrolib.feature import Feature
+import threading
 ftpCredFile = "ftpcreds.txt"
 
 # string-like wrapper class that marks a string as html-safe
@@ -225,4 +226,5 @@ body {{ background: #{background} }}
             self.generateTablePage([indexTable],"Astronomibot","","index")
 
             if self.ftpUrl!="":
-                self.ftpUpload()
+                uploadThread = threading.Thread(target=self.ftpUpload)
+                uploadThread.start()
