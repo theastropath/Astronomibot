@@ -32,8 +32,8 @@ class CustomCommand:
             response = response.replace(refReplaceTerm,str(refCount))
 
         if "CustomApi" in self.allCmds.bot.commands:
-            customApi = self.allCmds.bot.commands[self.allCmds.bot.commands.index("CustomApi")]
-            for api in customApi.customApis.keys():
+            customApi = self.allCmds.bot.commands["CustomApi"]
+            for api in customApi.customApis:
                 silentApi = "$SILENTAPI("+api+")"
                 replaceApi = "$CUSTOMAPI("+api+")"
 

@@ -8,6 +8,7 @@ import os
 import sys
 import imp
 import traceback
+from collections import OrderedDict
 
 from astrolib import EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr
 from astrolib.api import TwitchApi
@@ -57,8 +58,8 @@ class Bot:
 
     def __init__(self, channel, nick, pollFreq, api):
         self.modList = [] #List of all moderators for the channel
-        self.commands = []
-        self.features = []
+        self.commands = OrderedDict()
+        self.features = OrderedDict()
         self.registeredCmds = []
         self.chatters = []
         self.logs = []
@@ -79,10 +80,10 @@ class Bot:
         return self._channelId
 
     def getCommands(self):
-        return self.commands
+        return self.commands.values()
 
     def getFeatures(self):
-        return self.features
+        return self.features.values()
 
     def getMods(self):
         return self.modList
@@ -155,7 +156,7 @@ class Bot:
             c = imp.load_source('astrolib.commands.'+command, os.path.join(commandsDir, command+".py"))
             try:
                 cmd = getattr(c,command)
-                self.commands.append(cmd(self,command))
+                self.commands[command] = cmd(self, command)
                 print("Loaded command module '"+command+"'")
             except:
                 traceback.print_exc()
@@ -166,7 +167,7 @@ class Bot:
             f = imp.load_source('astrolib.features.'+feature, os.path.join(featuresDir, feature+".py"))
             try:
                 feat = getattr(f,feature)
-                self.features.append(feat(self,feature))
+                self.features[feature] = feat(self, feature)
                 print("Loaded feature module '"+feature+"'")
             except:
                 traceback.print_exc()

@@ -1,11 +1,11 @@
 from astrolib.command import Command
 from astrolib import MOD
-import os 
+import os
 
 configDir="config"
 scheduleFile = "ScheduledMsgs.txt"
 
-class ScheduledMsg():
+class ScheduledMsg:
 
     def __init__(self,bot,cmd,freq,numBetween):
         #Frequency in terms of ticks
@@ -15,7 +15,7 @@ class ScheduledMsg():
         self.started = False
         self.bot = bot
 
-        self.customCmds = self.bot.commands[self.bot.commands.index("CustomCmds")]
+        self.customCmds = self.bot.commands["CustomCmds"]
         self.tick=0
         self.numMsgs=0
 
@@ -109,7 +109,7 @@ class ScheduledMsgCmd(Command):
 
         tables.append(cmds)
         tables.append(msgs)
-   
+
         return tables
 
     def getParams(self):
@@ -136,7 +136,7 @@ class ScheduledMsgCmd(Command):
                         cmdFreq = int(schedMsg[1])
                         cmdNumBetween = int(schedMsg[2])
                         cmdStarted = (schedMsg[3]=="True")
-                        
+
                         self.createSched(cmdName,cmdFreq,cmdNumBetween)
                         if cmdStarted:
                             self.startSched(cmdName)
