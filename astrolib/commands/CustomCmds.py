@@ -272,7 +272,6 @@ class CustomCmds(Command):
                 command = msg.msg.split()[0].lower() #Only care about the first word
                 #Only a few hardcoded commands, then user editable commands
                 if command == "!addcom" or command == "!editcom" or command == "!delcom" or command == "!resetcount":
-                    print("Got a com mod command")
                     if userLevel>=self.modComLevel:
                         return True
                 elif command == "!list":
