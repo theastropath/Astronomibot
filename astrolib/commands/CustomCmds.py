@@ -1,9 +1,13 @@
+import re
 from astrolib.command import Command
 from astrolib import \
     EVERYONE, MOD, REGULAR, BROADCASTER, userLevelToStr, \
     replaceTerm, countTerm, referenceCountTerm
 
 cmdFile = "cmds.txt"
+
+referenceCountTermRegEx = re.compile(re.escape(referenceCountTerm) + r'\(([^\(\)]*)\)')
+
 
 class CustomCommand:
 
@@ -17,23 +21,24 @@ class CustomCommand:
     def canUseCommand(self,userlevel):
         return userlevel>=self.userlevel
 
+    def replaceFunc(self, match):
+        commandName = match.group(1)
+        if commandName in self.allCmds.customCmds:
+            refCount = self.allCmds.customCmds[commandName].callcount
+        else:
+            refCount = 0
+        return str(refCount)
+
     def handleVariables(self,afterCmd):
         response = self.response
         response = response.replace(replaceTerm,afterCmd)
         response = response.replace(countTerm,str(self.callcount))
 
-        while referenceCountTerm in response:
-            refReplaceTerm=""
-            refReplaceTerm=response.split(referenceCountTerm+"(")[1].split(")")[0]
-            refCount=0
-            if refReplaceTerm in self.allCmds.customCmds.keys():
-                    refCount = self.allCmds.customCmds[refReplaceTerm].callcount
-            refReplaceTerm=referenceCountTerm+"("+refReplaceTerm+")"
-            response = response.replace(refReplaceTerm,str(refCount))
+        response = referenceCountTermRegEx.sub(self.replaceFunc, response)
 
         if "CustomApi" in self.allCmds.bot.commands:
             customApi = self.allCmds.bot.commands[self.allCmds.bot.commands.index("CustomApi")]
-            for api in customApi.customApis.keys():
+            for api in customApi.customApis:
                 silentApi = "$SILENTAPI("+api+")"
                 replaceApi = "$CUSTOMAPI("+api+")"
 
