@@ -4,7 +4,7 @@ class ScheduledMsgFeature(Feature):
 
     def __init__(self,bot,name):
         super(ScheduledMsgFeature,self).__init__(bot,name)
-        self.schedMsgCmd = self.bot.commands[self.bot.commands.index("ScheduledMsgCmd")]
+        self.schedMsgCmd = self.bot.commands["ScheduledMsgCmd"]
 
     def sendMessage(self,message,sock):
         msg = "PRIVMSG "+self.bot.channel+" :"+message+"\n"
