@@ -2,6 +2,7 @@ from astrolib.command import Command
 from astrolib import MOD
 import requests
 import os
+from urllib.parse import quote
 
 configDir = "config"
 apiFile = "CustomApi.txt"
@@ -13,7 +14,16 @@ class Api():
 
     def getApiResponse(self,remainder):
         splitRemain = remainder.split()
+        apiAddress = self.address
         response = ""
+
+        for i in range(1,10):
+            if "${"+str(i)+"}" in apiAddress:
+                if i<=len(splitRemain):
+                    apiAddress=apiAddress.replace("${"+str(i)+"}",quote(splitRemain[i-1]))
+                else:
+                    response = "[Not enough parameters provided]"
+                    return response
 
         try:
             
@@ -24,7 +34,7 @@ class Api():
                    'Accept-Encoding': 'none',
                    'Accept-Language': 'en-US,en;q=0.8',
                    'Connection': 'keep-alive'}
-            r = requests.get(self.address,headers=hdr)
+            r = requests.get(apiAddress,headers=hdr)
             r.raise_for_status()
             response = r.text
         except requests.exceptions.HTTPError as e:
@@ -133,16 +143,16 @@ class CustomApi(Command):
 
         if action=="create":
             
-            #Check to see if command has already been scheduled.
+            #Check to see if API has already been created.
             if apiName in self.customApis.keys():
-                response = "Command has already been scheduled"
+                response = "API has already been created"
             else:
                 response = self.createApi(apiName,apiAddress)
 
         elif action == "delete":
-                #Ensure the scheduled command has already been created
+                #Ensure the API has already been created
                 if apiName not in self.customApis.keys():
-                    response = "Command has not yet been scheduled"
+                    response = "API does not exist"
                 else:
                     response=self.deleteApi(apiName)
 
