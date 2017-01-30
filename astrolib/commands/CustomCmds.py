@@ -8,6 +8,7 @@ cmdFile = "cmds.txt"
 
 referenceCountTermRegEx = re.compile(re.escape(referenceCountTerm) + r'\(([^\(\)]*)\)')
 
+
 class CustomCommand:
 
     def __init__(self,allCmds,command,response,callcount=0,userlevel=EVERYONE):
@@ -21,8 +22,11 @@ class CustomCommand:
         return userlevel>=self.userlevel
 
     def replaceFunc(self, match):
-        refReplaceTerm = match.group(1)
-        refCount = self.allCmds.customCmds.get(refReplaceTerm, 0)
+        commandName = match.group(1)
+        if commandName in self.allCmds.customCmds:
+            refCount = self.allCmds.customCmds[commandName].callcount
+        else:
+            refCount = 0
         return str(refCount)
 
     def handleVariables(self,afterCmd):
