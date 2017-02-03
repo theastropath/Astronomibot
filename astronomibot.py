@@ -225,6 +225,11 @@ class IrcMessage:
             self.sender = prefix.split('!', 1)[0][1:]
             self.channel = rest
             self.msg = rest
+        
+        elif messageType == 'PART':
+            self.sender = prefix.split('!', 1)[0][1:]
+            self.channel = rest
+            self.msg = rest
 
         elif messageType == 'CAP':
             breakdown = rest.split(None, 2)
