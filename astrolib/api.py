@@ -19,11 +19,16 @@ class TwitchApi:
 
 
     def _pubRequest(self, url):
-        response = self.session.get(url)
+        response = self.session.get(url,headers={
+        'Accept': 'application/vnd.twitchtv.v5+json',
+        })
         return json.loads(response.text)
 
     def _idedRequest(self, url):
-        response = self.session.get(url, headers={'Client-ID': self.clientId})
+        response = self.session.get(url, headers={
+        'Client-ID': self.clientId,
+        'Accept': 'application/vnd.twitchtv.v5+json',
+        })
         result = json.loads(response.text)
         return result
 
@@ -114,9 +119,10 @@ class TwitchApi:
     def getStreamLiveTime(self, channelName):
         try:
             streamState = self._idedRequest("https://api.twitch.tv/kraken/streams/"+channelName)
-            if streamState['stream'] is not None:
-                liveTime = streamState['stream']['created_at']
-                return time.strptime(liveTime, '%Y-%m-%dT%H:%M:%SZ')
+            if 'stream' in streamState:
+                if streamState['stream'] is not None:
+                    liveTime = streamState['stream']['created_at']
+                    return time.strptime(liveTime, '%Y-%m-%dT%H:%M:%SZ')
 
         except HTTPError as e:
             print("getStreamLiveTime: "+str(e))
@@ -136,10 +142,12 @@ class TwitchApi:
 
     def getChannelIdFromName(self,username):
         try:
-            user = self._idedRequest("https://api.twitch.tv/kraken/users?login="+username+"&api_version=5")
-            if '_id' in user:
-                chanId = user['_id']
-                return chanId
+            users = self._idedRequest("https://api.twitch.tv/kraken/users?login="+username+"&api_version=5")
+            if 'users' in users:
+                for user in users['users']:
+                    if  user['name'] == username and '_id' in user:
+                        chanId = user['_id']
+                        return chanId
 
         except HTTPError as e:
             print("getChannelIdFromName: "+str(e))
