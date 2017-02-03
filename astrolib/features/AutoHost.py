@@ -88,7 +88,7 @@ class AutoHost(Feature):
 
             self.hostUpdate = self.hostCheckFrequency
 
-            if not self.bot.api.isStreamOnline(self.bot.channel[1:]):
+            if not self.bot.api.isStreamOnline(self.bot.channelId):
                 #Stream must be offline for several checks in a row
                 #(To prevent an occasional lookup failure from hosting during a stream)
                 self.offlineTime += 1
@@ -103,7 +103,8 @@ class AutoHost(Feature):
                 #Stream is offline.
                 if self.hosting:
                     #Check if hosted channel is still online, and stop hosting if not
-                    if not self.bot.api.isStreamOnline(self.hostChannel):
+                    hostChannelId = self.bot.api.getChannelIdFromName(self.hostChannel)
+                    if not self.bot.api.isStreamOnline(hostChannelId):
                         #Hosted channel is no longer online, stop hosting
                         self.stopHosting(sock)
 
@@ -121,7 +122,8 @@ class AutoHost(Feature):
                 #Check for channels in host list that are online
                 if not self.hosting or checkForNewHost:
                     for channel in self.hostList:
-                        if self.bot.api.isStreamOnline(channel):
+                        hostChannelId = self.bot.api.getChannelIdFromName(channel)
+                        if self.bot.api.isStreamOnline(hostChannelId):
                             if not checkForNewHost: #IN the normal case, just host the highest priority stream
                                 self.startHosting(channel,sock)
                                 return

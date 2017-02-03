@@ -2,6 +2,7 @@ import time
 import json
 from urllib.parse import urlencode
 from requests import Session
+from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError, InvalidURL, ConnectionError
 
 class TwitchApi:
@@ -10,6 +11,12 @@ class TwitchApi:
         self.accessToken = accessToken
         self.clientSecret = clientSecret
         self.session = Session()
+
+        #Allow 2 retries on all API requests
+        retryAdapter = HTTPAdapter(max_retries=2)
+        self.session.mount('https://',retryAdapter)
+        self.session.mount('http://',retryAdapter)
+
 
     def _pubRequest(self, url):
         response = self.session.get(url)
@@ -88,10 +95,13 @@ class TwitchApi:
     def getTwitchEmotes(self):
         return self._pubRequest('https://api.twitch.tv/kraken/chat/emoticons')['emoticons']
 
-    def isStreamOnline(self, channelName):
+    def isStreamOnline(self, channelId):
+        if channelId == None:
+            return False
         try:
-            streamState = self._idedRequest("https://api.twitch.tv/kraken/streams/"+channelName)
-            return streamState['stream'] is not None
+            streamState = self._idedRequest("https://api.twitch.tv/kraken/streams/"+channelId)
+            if 'stream' in streamState:
+                return streamState['stream'] is not None
 
         except HTTPError as e:
             print("isStreamOnline "+str(e))
@@ -121,6 +131,18 @@ class TwitchApi:
 
         except HTTPError as e:
             print("getChannelId: "+str(e))
+
+        return None
+
+    def getChannelIdFromName(self,username):
+        try:
+            user = self._idedRequest("https://api.twitch.tv/kraken/users?login="+username+"&api_version=5")
+            if '_id' in user:
+                chanId = user['_id']
+                return chanId
+
+        except HTTPError as e:
+            print("getChannelIdFromName: "+str(e))
 
         return None
 
@@ -154,7 +176,6 @@ class TwitchApi:
     def getChatters(self, channelName):
         try:
             chatlist = self._pubRequest('http://tmi.twitch.tv/group/user/%s/chatters' % channelName.lower())
-
             return chatlist['chatters']
 
         except HTTPError as e:
@@ -162,6 +183,7 @@ class TwitchApi:
             #so we don't want to constantly be printing the error out
             #print("getChatters: "+str(e))
             pass
+            
         except InvalidURL as e:
             print("getChatters: "+str(e))
 

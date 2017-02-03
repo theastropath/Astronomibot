@@ -94,7 +94,7 @@ class LiveNotifications(Feature):
 
             self.liveCheck = self.liveCheckFrequency
 
-            online =  self.bot.api.isStreamOnline(self.bot.channel[1:])
+            online =  self.bot.api.isStreamOnline(self.bot.channelId)
             if (online and not self.live):
                 self.bot.addLogMessage("Stream has gone live")
                 self.live = True

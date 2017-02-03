@@ -44,7 +44,7 @@ class UpTime(Command):
         tables = []
 
         live = "No"
-        if self.bot.api.isStreamOnline(self.bot.channel[1:]):
+        if self.bot.api.isStreamOnline(self.bot.channelId):
             live = "Yes"
 
         state=[]
@@ -74,7 +74,7 @@ class UpTime(Command):
         response = ""
         channelName=self.bot.channel[1:]
 
-        if not self.bot.api.isStreamOnline(channelName):
+        if not self.bot.api.isStreamOnline(self.bot.channelId):
             response = "Stream is not live"
         else:
             response = "Stream has been live for %s" % self.getStreamLiveTime(channelName)

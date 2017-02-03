@@ -165,7 +165,7 @@ body {{ background: #{background} }}
         if os.path.exists(self.outputLocation+os.sep+self.bot.channel[1:]):
             ftp = None
             try:
-                ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass)
+                ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass,timeout=15)
                 ftp.cwd(self.ftpDir)
                 for file in os.listdir(self.outputLocation+os.sep+self.bot.channel[1:]):
                     filepath = self.outputLocation+os.sep+self.bot.channel[1:]+os.sep+file
