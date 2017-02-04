@@ -22,14 +22,21 @@ class TwitchApi:
         response = self.session.get(url,headers={
         'Accept': 'application/vnd.twitchtv.v5+json',
         })
-        return json.loads(response.text)
+        try:
+            return json.loads(response.text)
+        except:
+            return None
 
     def _idedRequest(self, url):
         response = self.session.get(url, headers={
         'Client-ID': self.clientId,
         'Accept': 'application/vnd.twitchtv.v5+json',
         })
-        result = json.loads(response.text)
+        try:
+            result = json.loads(response.text)
+        except:
+            result = None
+
         return result
 
     def _authRequest(self, url, data=None, method='GET'):
@@ -42,8 +49,10 @@ class TwitchApi:
             'Authorization': 'OAuth '+self.accessToken,
             'Content-Type': 'application/json'
         })
-
-        return json.loads(response.text)
+        try:
+            return json.loads(response.text)
+        except:
+            return None
 
     def setGame(self, channelId, game):
         if channelId is None:
@@ -116,9 +125,9 @@ class TwitchApi:
 
         return False
 
-    def getStreamLiveTime(self, channelName):
+    def getStreamLiveTime(self, channelId):
         try:
-            streamState = self._idedRequest("https://api.twitch.tv/kraken/streams/"+channelName)
+            streamState = self._idedRequest("https://api.twitch.tv/kraken/streams/"+channelId)
             if 'stream' in streamState:
                 if streamState['stream'] is not None:
                     liveTime = streamState['stream']['created_at']

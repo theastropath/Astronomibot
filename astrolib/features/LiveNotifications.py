@@ -46,7 +46,7 @@ class LiveNotifications(Feature):
         #If live, check to see how long channel has been live
         #If live for less than liveCheckFrequency, stay offline
         #Else, mark channel as live so that no notification goes out
-        startTime = self.bot.api.getStreamLiveTime(self.bot.channel[1:])
+        startTime = self.bot.api.getStreamLiveTime(self.bot.channelId)
         if startTime is not None:
             epochStartTime = calendar.timegm(startTime)
             curEpochTime = time.time()

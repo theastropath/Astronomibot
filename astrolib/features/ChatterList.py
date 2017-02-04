@@ -22,5 +22,5 @@ class ChatterList(Feature):
         if self.chatUpdate == 0:
             self.chatUpdate = self.chatListFreq
             allchatters = self.bot.api.getAllChatters(self.bot.channel[1:])
-            if allchatters is not None:
+            if allchatters is not None and allchatters:
                 self.bot.chatters = allchatters

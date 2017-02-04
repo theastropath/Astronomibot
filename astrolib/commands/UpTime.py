@@ -29,8 +29,8 @@ class UpTime(Command):
 
         return False
 
-    def getStreamLiveTime(self, channelName):
-        startTime = self.bot.api.getStreamLiveTime(channelName)
+    def getStreamLiveTime(self):
+        startTime = self.bot.api.getStreamLiveTime(self.bot.channelId)
         if startTime is not None:
             epochStartTime = calendar.timegm(startTime)
             curEpochTime = time.time()
@@ -51,7 +51,7 @@ class UpTime(Command):
         state.append(("",""))
         state.append(("Channel Live?",live))
         if live == "Yes":
-            state.append(("Live for",self.getStreamLiveTime(self.bot.channel[1:])))
+            state.append(("Live for",self.getStreamLiveTime()))
         state.append(("",""))
 
         cmds = []
@@ -72,12 +72,11 @@ class UpTime(Command):
 
     def respond(self,msg,sock):
         response = ""
-        channelName=self.bot.channel[1:]
 
         if not self.bot.api.isStreamOnline(self.bot.channelId):
             response = "Stream is not live"
         else:
-            response = "Stream has been live for %s" % self.getStreamLiveTime(channelName)
+            response = "Stream has been live for %s" % self.getStreamLiveTime()
 
         ircResponse = "PRIVMSG %s :%s\n" % (self.bot.channel, response)
         sock.sendall(ircResponse.encode('utf-8'))
