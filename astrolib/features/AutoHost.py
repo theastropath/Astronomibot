@@ -32,7 +32,7 @@ class AutoHost(Feature):
 
         with open(hostListPath,mode='w',encoding="utf-8") as f:
             for channel in self.hostList:
-                f.write(channel.lower()+"\n")
+                f.write(channel.lower()+"\r\n")
 
     def readHostList(self):
         #Load regulars
@@ -93,10 +93,11 @@ class AutoHost(Feature):
                 #(To prevent an occasional lookup failure from hosting during a stream)
                 self.offlineTime += 1
 
-                if self.offlineTime < 3:
+                if self.offlineTime <= 3:
+                    #print("Stream offline "+str(self.offlineTime))
                     return
                 else:
-                    self.offlineTime = 3 #Prevent it from rolling over during long periods of offline
+                    self.offlineTime = 4 #Prevent it from rolling over during long periods of offline
 
 
 
@@ -137,8 +138,10 @@ class AutoHost(Feature):
                                     return
 
             else:
+                #print("Stream Online...")
                 if self.hosting:
                     #send unhost message
                     self.stopHosting(sock)
                 self.hosting = False
                 self.offlineTime = 0
+                self.hostUpdate = 3 * self.hostCheckFrequency

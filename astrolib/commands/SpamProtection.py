@@ -95,12 +95,11 @@ class SpamProtection(Command):
 
     def emoteSpamCheck(self,msg,userLevel):
         emoteCount = 0
-
         for emote in self.emoteList:
             matches = self.emoteList[emote].findall(msg.msg)
             if len(matches)>0:
+                #print("In message '"+msg.msg+"', Found "+str(len(matches))+" of "+emote)
                 emoteCount = emoteCount + len(matches)
-
         return emoteCount
 
     def urlSpamCheck(self,msg,userLevel):
@@ -113,6 +112,9 @@ class SpamProtection(Command):
     def shouldRespond(self, msg, userLevel):
 
         if userLevel != EVERYONE:
+            return False
+
+        if msg.messageType!='PRIVMSG':
             return False
 
         if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
@@ -166,6 +168,15 @@ class SpamProtection(Command):
         return response
 
     def loadTwitchEmotes(self):
-        emotes = self.bot.api.getTwitchEmotes()
-        for emote in emotes:
-            self.emoteList[emote["regex"]] = re.compile(emote["regex"])
+        emotes = None
+        attempts=0
+        while emotes is None and attempts<=3:
+            emotes = self.bot.api.getTwitchEmotes2()
+            attempts+=1
+            time.sleep(5)
+        if emotes is not None:
+            for emote in emotes:
+                #self.emoteList[emote["regex"]] = re.compile("\\b"+emote["regex"]+"\\b")
+                self.emoteList[emote["code"]] = re.compile("\\b"+emote["code"]+"\\b")
+        else:
+            print("Failed to load emotes")

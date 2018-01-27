@@ -111,10 +111,9 @@ class Regulars(Command):
 
         #Save the new list of regulars
         if changed:
-            commands = self.bot.channel[1:]+cmdFile
             with open(configDir+os.sep+self.bot.channel[1:]+os.sep+regFile,mode='w',encoding="utf-8") as f:
                 for reg in self.bot.regulars:
-                    f.write(reg.lower()+"\n")
+                    f.write(reg.lower()+"\r\n")
 
         response = ""
 

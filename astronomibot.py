@@ -100,7 +100,7 @@ class Bot:
     def exportLogs(self):
         with open(configDir+os.sep+self.channel[1:]+os.sep+self.logFile,mode='w',encoding="utf-8") as f:
             for log in self.logs:
-                f.write(log[0]+"$$$"+log[1]+"\n")
+                f.write(log[0]+"$$$"+log[1]+"\r\n")
 
 
 
@@ -150,6 +150,7 @@ class Bot:
             if ".py" == ext and featureName not in self.features:
                 featureFiles.append(featureName)
 
+        commandFiles.sort()
         for command in commandFiles:
 
             #Load file, and get the corresponding class in it, then instantiate it
@@ -162,6 +163,7 @@ class Bot:
                 traceback.print_exc()
                 print("Couldn't load command module '"+command+"'")
 
+        featureFiles.sort()
         for feature in featureFiles:
             #Load file, and get the corresponding class in it, then instantiate it
             f = imp.load_source('astrolib.features.'+feature, os.path.join(featuresDir, feature+".py"))
@@ -263,7 +265,7 @@ def logMessage(sender,msg):
     curTime = datetime.now()
     timestamp = curTime.strftime("%Y-%m-%d %H:%M:%S")
     logFile = curTime.strftime("%Y-%m-%d.txt")
-    logMsg = timestamp+" - "+sender+": "+msg+"\n"
+    logMsg = timestamp+" - "+sender+": "+msg+"\r\n"
     channelLogDir = os.path.join(logDir, channel[1:])
 
     if not os.path.exists(channelLogDir):

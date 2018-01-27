@@ -1,7 +1,14 @@
-import milight
+import limitlessled
+from limitlessled import Color
+from limitlessled.bridge import Bridge
+from limitlessled.group.rgbww import RGBWW
+from limitlessled.presets import COLORLOOP
+from limitlessled.group.commands.v6 import CommandV6
+
 import webcolors
 from astrolib.command import Command
 from astrolib import BROADCASTER
+from time import sleep
 
 class MiLight(Command):
 
@@ -14,6 +21,9 @@ class MiLight(Command):
         self.lightcontrollerport = 8899
         self.enabled = False
         self.paramsHaveChanged = False
+        self.groups=[]
+        self.brightness=1.0
+        self.lastColour=(255,255,255)
 
         if not self.bot.isCmdRegistered("!light"):
             self.bot.regCmd("!light",self)
@@ -36,9 +46,11 @@ class MiLight(Command):
             print("!swirl is already registered to ",self.bot.getCmdOwner("!swirl"))
 
         if self.lightgroup!=0 and len(self.lightcontrollerip)>0:
-            self.cont = milight.MiLight({'host':self.lightcontrollerip,'port':self.lightcontrollerport},wait_duration=0)
-            self.light = milight.LightBulb(['rgbw'])
-            self.cont.send(self.light.on(self.lightgroup))
+            self.bridge = Bridge('192.168.1.39')
+            self.groups=[]
+            for groupnum in range(1,5):
+                self.groups.append(self.bridge.add_group(groupnum,str(groupnum),RGBWW))
+            
             self.enabled = True
 
     def getState(self):
@@ -47,14 +59,18 @@ class MiLight(Command):
         state=[]
         state.append(("",""))
         state.append(("Last State",self.lastState))
+        state.append(("Brightness %",self.brightness*100))
         state.append(("Light Group",str(self.lightgroup)))
         state.append(("",""))
 
         cmds = []
         cmds.append(("Command","Description","Example"))
         cmds.append(("!light <r> <g> <b>","Specify an exact colour with RGB values for the light.  Values are between 0 and 255","!light 255 0 128"))
+        cmds.append(("!light <Colour name>","Set a light colour by name.  Accepts HTML colour names.","!light olivegreen"))
+        cmds.append(("!brightness","Sets the light brightness, in percent","!brightness 75"))
         cmds.append(("!disco","Makes the light flash between various colours","!disco"))
         cmds.append(("!swirl","Makes the light gently swirl between all the colours","!swirl"))
+
 
         tables.append(state)
         tables.append(cmds)
@@ -76,16 +92,28 @@ class MiLight(Command):
         return params
 
     def setParam(self, param, val):
+        changed = False
         if param == 'LightGroup':
+            if self.lightgroup!=int(val):
+                changed=True
             self.lightgroup = int(val)
         if param == 'LightControllerIP':
+            if self.lightcontrollerip!=val:
+                changed=True
             self.lightcontrollerip = val
         if param == 'LightControllerPort':
+            if self.lightcontrollerport!=int(val):
+                changed=True
             self.lightcontrollerport = int(val)
 
         if self.lightgroup!=0 and len(self.lightcontrollerip)>0:
-            self.cont = milight.MiLight({'host':self.lightcontrollerip,'port':self.lightcontrollerport},wait_duration=0)
-            self.light = milight.LightBulb(['rgbw'])
+            if changed:
+                #print("Setting params milight")
+                self.bridge = Bridge(self.lightcontrollerip)
+                self.groups=[]
+                for groupnum in range(1,5):
+                    self.groups.append(self.bridge.add_group(groupnum,str(groupnum),RGBWW))
+
             self.enabled = True
         else:
             self.enabled = False
@@ -105,13 +133,37 @@ class MiLight(Command):
             if splitMsg[0]=='!light' and len(splitMsg)==4:
                 if splitMsg[1].isdigit() and splitMsg[2].isdigit() and splitMsg[3].isdigit():
                     return True
+            if splitMsg[0]=='!light' and len(splitMsg)==2:
+                try:
+                    webcolors.name_to_rgb(splitMsg[1])
+                    return True
+                except:
+                    return False
             if splitMsg[0]=='!disco':
                 return True
             if splitMsg[0]=='!swirl':
                 return True
             if splitMsg[0]=='!lightgroup' and userLevel == BROADCASTER:
                 return True
+            if splitMsg[0]=='!brightness' and len(splitMsg)==2:
+                if splitMsg[1].isdigit():
+                    return True
         return False
+
+    def setPartyMode(self,mode):
+        #LimitlessLED package does not yet support party modes.  Manual implementation...
+        message = [0x80,0x00,0x00,0x00,0x11,int(self.bridge._wb1),int(self.bridge._wb2),0x00,int(self.bridge._sn),0x00]
+        partyCommand = [0x31,0x00,0x00,0x08,0x06,int(mode),0x00,0x00,0x00,int(self.lightgroup),0x00]
+        checksum = 0
+        for val in partyCommand:
+            checksum += int(val)
+        checksum = checksum & 0xFF
+        partyCommand.append(checksum)
+        message = message + partyCommand
+        #print(str(message))
+        self.bridge._send_raw(message)
+        sleep(0.1)
+        self.bridge._send_raw(message) #Send twice as sometimes it doesn't actually happen
 
 
     def respond(self,msg,sock):
@@ -119,37 +171,77 @@ class MiLight(Command):
         response=""
 
         if splitMsg[0]=='!light':
-            red = int(splitMsg[1])
-            if red<0:
-                red=0
-            elif red>255:
-                red=255
+            if len(splitMsg)==2:
+                colour=webcolors.name_to_rgb(splitMsg[1])
+                red = colour[0]
+                green = colour[1]
+                blue = colour[2]
 
-            green = int(splitMsg[2])
-            if green<0:
-                green=0
-            elif green>255:
-                green=255
+            else:
+                red = int(splitMsg[1])
+                if red<0:
+                    red=0
+                elif red>255:
+                    red=255
 
-            blue = int(splitMsg[3])
-            if blue<0:
-                blue=0
-            elif blue>255:
-                blue=255
+                green = int(splitMsg[2])
+                if green<0:
+                    green=0
+                elif green>255:
+                    green=255
 
-            self.cont.send(self.light.color(milight.color_from_rgb(red,green,blue),self.lightgroup))
+                blue = int(splitMsg[3])
+                if blue<0:
+                    blue=0
+                elif blue>255:
+                    blue=255
+
+            #self.cont.send(self.light.color(milight.color_from_rgb(red,green,blue),self.lightgroup))
+            if red or green or blue:
+                self.groups[self.lightgroup-1].on = True
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,color=Color(red,green,blue))
+                sleep(0.1)
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,color=Color(red,green,blue))
+
+            else:
+                self.groups[self.lightgroup-1].on = False
+
+            self.lastColour=(red,green,blue)
             self.lastState = "R"+str(red)+" G"+str(green)+" B"+str(blue)
             response = "Light changed to R"+str(red)+" G"+str(green)+" B"+str(blue)
 
         elif splitMsg[0]=='!disco':
-            self.cont.send(self.light.party('rainbow_jump',self.lightgroup))
+            self.groups[self.lightgroup-1].on = True
+            self.setPartyMode(5)
             self.lastState="Disco Mode"
             response = "Light switched to disco mode"
 
         elif splitMsg[0]=='!swirl':
-            self.cont.send(self.light.party('rainbow_swirl',self.lightgroup))
+            self.groups[self.lightgroup-1].on = True
+
+            self.setPartyMode(2)
             self.lastState="Rainbow Swirl Mode"
             response = "Light switched to rainbow swirl mode"
+
+        elif splitMsg[0]=='!brightness':
+            newBrightness=int(splitMsg[1])
+            if newBrightness<0:
+                newBrightness=0
+            elif newBrightness>100:
+                newBrightness=100
+
+            self.brightness=newBrightness/100.0
+            if self.lastColour[0] or self.lastColour[1] or self.lastColour[2]:
+                self.groups[self.lightgroup-1].on = True
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,color=Color(self.lastColour[0],self.lastColour[1],self.lastColour[2]))
+                sleep(0.1)
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,color=Color(self.lastColour[0],self.lastColour[1],self.lastColour[2]))                
+            else:
+                self.groups[self.lightgroup-1].on = False
+                
+            response = "Light brightness set to "+str(newBrightness)+"%"
+
+
 
         elif splitMsg[0]=='!lightgroup':
             if len(splitMsg)>1:

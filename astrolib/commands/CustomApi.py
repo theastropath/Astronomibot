@@ -105,7 +105,7 @@ class CustomApi(Command):
         apiStorageFile = configDir+os.sep+self.bot.channel[1:]+os.sep+apiFile
         with open(apiStorageFile,mode='w',encoding='utf-8') as f:
             for api in self.customApis.keys():
-                f.write(self.customApis[api].name+" "+self.customApis[api].address+"\n")
+                f.write(self.customApis[api].name+" "+self.customApis[api].address+"\r\n")
 
     def importApis(self):
         apiStorageFile = configDir+os.sep+self.bot.channel[1:]+os.sep+apiFile

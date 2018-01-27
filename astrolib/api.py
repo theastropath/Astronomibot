@@ -34,7 +34,7 @@ class TwitchApi:
         })
         try:
             result = json.loads(response.text)
-        except:
+        except Exception as e:
             result = None
 
         return result
@@ -107,14 +107,27 @@ class TwitchApi:
 
 
     def getTwitchEmotes(self):
-        return self._pubRequest('https://api.twitch.tv/kraken/chat/emoticons')['emoticons']
-
+        emotes = self._idedRequest('https://api.twitch.tv/kraken/chat/emoticons')
+        if emotes is not None and "emoticons" in emotes.keys():
+            return emotes['emoticons']
+        else:
+            print("Couldn't fetch emotes")
+            return None
+        
+    def getTwitchEmotes2(self):
+        emotes = self._idedRequest('https://api.twitch.tv/kraken/chat/emoticon_images')
+        if emotes is not None and "emoticons" in emotes.keys():
+            return emotes['emoticons']
+        else:
+            print("Couldn't fetch emotes")
+            return None
+        
     def isStreamOnline(self, channelId):
         if channelId == None:
             return False
         try:
             streamState = self._idedRequest("https://api.twitch.tv/kraken/streams/"+channelId)
-            if 'stream' in streamState:
+            if streamState and 'stream' in streamState:
                 return streamState['stream'] is not None
 
         except HTTPError as e:
@@ -128,7 +141,7 @@ class TwitchApi:
     def getStreamLiveTime(self, channelId):
         try:
             streamState = self._idedRequest("https://api.twitch.tv/kraken/streams/"+channelId)
-            if 'stream' in streamState:
+            if streamState and 'stream' in streamState:
                 if streamState['stream'] is not None:
                     liveTime = streamState['stream']['created_at']
                     return time.strptime(liveTime, '%Y-%m-%dT%H:%M:%SZ')
@@ -152,7 +165,7 @@ class TwitchApi:
     def getChannelIdFromName(self,username):
         try:
             users = self._idedRequest("https://api.twitch.tv/kraken/users?login="+username+"&api_version=5")
-            if 'users' in users:
+            if users and 'users' in users:
                 for user in users['users']:
                     if  user['name'] == username and '_id' in user:
                         chanId = user['_id']
@@ -169,7 +182,8 @@ class TwitchApi:
 
         try:
             hostsList = self._pubRequest("https://tmi.twitch.tv/hosts?"+urlencode({'include_logins': '1', 'host': channelId}))
-            return 'target_login' in hostsList['hosts'][0]
+            if hostsList and 'hosts' in hostsList:
+                return 'target_login' in hostsList['hosts'][0]
 
         except HTTPError as e:
             print("isHosting: "+str(e))
@@ -193,7 +207,8 @@ class TwitchApi:
     def getChatters(self, channelName):
         try:
             chatlist = self._pubRequest('http://tmi.twitch.tv/group/user/%s/chatters' % channelName.lower())
-            return chatlist['chatters']
+            if chatlist and 'chatters' in chatlist:
+                return chatlist['chatters']
 
         except HTTPError as e:
             #This API is particularly prone to responding with a 503,

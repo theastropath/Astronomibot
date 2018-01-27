@@ -25,7 +25,7 @@ class OutputConfig(Feature):
         if (len(obj.getParams())>0) and (obj.paramsChanged() or not os.path.isfile(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt))):
             with open(os.path.join(self.configDir,self.bot.channel[1:],obj.name+self.configExt),'w') as f:
                 for param in obj.getParams():
-                    f.write(param['title']+" "+str(param['val'])+"\n")
+                    f.write(param['title']+" "+str(param['val'])+"\r\n")
 
     def handleFeature(self,sock):
         self.outputTime = self.outputTime - 1

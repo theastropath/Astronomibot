@@ -3,9 +3,13 @@ from astrolib.feature import Feature
 import calendar
 import time
 import tweepy
+import json
+
+from requests import Session
 
 configDir = "config"
 twitterCredFile = "twittercreds.txt"
+discordCredFile = "discordcreds.txt"
 
 class LiveNotifications(Feature):
 
@@ -27,18 +31,32 @@ class LiveNotifications(Feature):
 
         try:
             with open(twitterCredFile) as f:
-                self.consumerkey = f.readline().strip('\n')
-                self.consumersecret = f.readline().strip('\n')
-                self.accesstoken = f.readline().strip('\n')
-                self.accesstokensecret = f.readline().strip('\n')
+                self.twitConsumerkey = f.readline().strip('\n')
+                self.twitConsumersecret = f.readline().strip('\n')
+                self.twitAccesstoken = f.readline().strip('\n')
+                self.twitAccesstokensecret = f.readline().strip('\n')
 
                 self.tweet=True
         except FileNotFoundError:
-            pass #No FTP cred file found.  Just won't try to upload.
+            pass #No Twitter cred file found.  Just won't try to upload.
+
+        try:
+            with open(discordCredFile) as f:
+                self.discordClientId = f.readline().strip('\n')
+                self.discordClientSecret = f.readline().strip('\n')
+                self.discordUserName = f.readline().strip('\n')
+                self.discordUserId = f.readline().strip('\n')
+                self.discordAccessToken = f.readline().strip('\n')
+                self.discordChannelId = f.readline().strip("\n") 
+
+                self.discord = True 
+        except FileNotFoundError:
+            pass #No Twitter cred file found.  Just won't try to upload.
+
 
         if self.tweet:
-            auth = tweepy.OAuthHandler(self.consumerkey,self.consumersecret)
-            auth.set_access_token(self.accesstoken,self.accesstokensecret)
+            auth = tweepy.OAuthHandler(self.twitConsumerkey,self.twitConsumersecret)
+            auth.set_access_token(self.twitAccesstoken,self.twitAccesstokensecret)
             
             self.twitterApi = tweepy.API(auth)
 
@@ -71,11 +89,23 @@ class LiveNotifications(Feature):
         if len(tweet)>140:
             diff = len(tweet)-140
             tweet = msg[:-diff-3]+"...\n"+url
-
-        self.twitterApi.update_status(tweet)
+        try:
+            self.twitterApi.update_status(tweet)
+        except Exception as e:
+            print("Encountered an issue when attempting to tweet: "+str(e))
 
     def sendDiscordMsg(self,msg, url):
-        print("Discording '"+msg+"'")
+        notifyMsg = "Now live!\n"+msg+"\n"+url
+        content = {"content": notifyMsg}
+        content = json.dumps(content).encode('utf-8')
+        discordMsgApi = "https://discordapp.com/api/channels/"+self.discordChannelId+"/messages"
+        session=Session()
+        response = session.request('POST', discordMsgApi, data=content,headers={
+            'Authorization': 'Bot '+self.discordAccessToken,
+            'User-Agent': 'Astronomibot (astronomibot.xyz, v1)',
+            'Content-Type': 'application/json'
+        })
+
 
     def sendNotifications(self):
         notifyMsg = self.bot.api.getTitle(self.bot._channelId)

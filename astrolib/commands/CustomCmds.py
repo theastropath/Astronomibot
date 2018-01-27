@@ -66,7 +66,7 @@ class CustomCommand:
         return other < self.command
 
     def exportCommand(self):
-        return self.command+" "+str(self.userlevel)+" "+str(self.callcount)+" "+self.response+'\n'
+        return self.command+" "+str(self.userlevel)+" "+str(self.callcount)+" "+self.response+'\r\n'
 
 
 

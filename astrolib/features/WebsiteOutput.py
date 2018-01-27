@@ -168,10 +168,13 @@ body {{ background: #{background} }}
                 ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass,timeout=15)
                 ftp.cwd(self.ftpDir)
                 for file in os.listdir(self.outputLocation+os.sep+self.bot.channel[1:]):
+                    #print("Uploading "+file)
                     filepath = self.outputLocation+os.sep+self.bot.channel[1:]+os.sep+file
                     with open(filepath,'rb') as f:
                         ftp.storbinary("STOR "+file+".tmp",f)
+                    #print(file+" uploaded")
                     ftp.rename(file+".tmp",file)
+                    #print("Renamed "+file)
                 ftp.close()
             except ftplib.all_errors as e:
                 print("Encountered an error trying to deal with the FTP connection: "+str(e))

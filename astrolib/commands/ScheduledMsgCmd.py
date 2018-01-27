@@ -123,7 +123,7 @@ class ScheduledMsgCmd(Command):
         msgStorageFile = configDir+os.sep+self.bot.channel[1:]+os.sep+scheduleFile
         with open(msgStorageFile,mode='w',encoding='utf-8') as f:
             for schedMsg in self.schedMsgs.keys():
-                f.write(self.schedMsgs[schedMsg].export()+"\n")
+                f.write(self.schedMsgs[schedMsg].export()+"\r\n")
 
     def importScheduledMsgs(self):
         msgStorageFile = configDir+os.sep+self.bot.channel[1:]+os.sep+scheduleFile
