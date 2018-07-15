@@ -6,6 +6,8 @@ import time
 from html import escape
 from astrolib.feature import Feature
 import threading
+from traceback import print_exc
+from time import sleep
 ftpCredFile = "ftpcreds.txt"
 
 # string-like wrapper class that marks a string as html-safe
@@ -167,18 +169,30 @@ body {{ background: #{background} }}
             try:
                 ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass,timeout=15)
                 ftp.cwd(self.ftpDir)
+                #print(str(ftp.nlst()))
                 for file in os.listdir(self.outputLocation+os.sep+self.bot.channel[1:]):
                     #print("Uploading "+file)
                     filepath = self.outputLocation+os.sep+self.bot.channel[1:]+os.sep+file
                     with open(filepath,'rb') as f:
                         ftp.storbinary("STOR "+file+".tmp",f)
                     #print(file+" uploaded")
-                    ftp.rename(file+".tmp",file)
+                    #sleep(1)
+                    #ftp.rename(file+".tmp",file)
                     #print("Renamed "+file)
-                ftp.close()
+                for file in ftp.nlst():
+                    if ".tmp" in file:
+                        ftp.rename(file,file[:-4])
+
             except ftplib.all_errors as e:
                 print("Encountered an error trying to deal with the FTP connection: "+str(e))
-                if ftp is not None:
+                print_exc()
+                
+            if ftp is not None:
+                try:
+                    ftp.quit()
+                except ftplib.all_errors as e:
+                    print ("Encountered an error when trying to quit FTP connection: "+str(e))
+                    print_exc()
                     ftp.close()
 
     def __init__(self,bot,name):
@@ -229,5 +243,7 @@ body {{ background: #{background} }}
             self.generateTablePage([indexTable],"Astronomibot","","index")
 
             if self.ftpUrl!="":
+                #print("Number of living threads before: "+str(threading.active_count()))
                 uploadThread = threading.Thread(target=self.ftpUpload)
                 uploadThread.start()
+                #print("Number of living threads after: "+str(threading.active_count()))

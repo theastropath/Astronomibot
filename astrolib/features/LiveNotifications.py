@@ -86,8 +86,8 @@ class LiveNotifications(Feature):
         #print("Tweeting '"+msg+"\n"+url+"'")
         tweet = msg+"\n"+url
 
-        if len(tweet)>140:
-            diff = len(tweet)-140
+        if len(tweet)>280:
+            diff = len(tweet)-280
             tweet = msg[:-diff-3]+"...\n"+url
         try:
             self.twitterApi.update_status(tweet)

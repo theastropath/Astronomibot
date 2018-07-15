@@ -107,6 +107,7 @@ class Bot:
     def addLogMessage(self,msg):
         curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
         self.logs.append((curTime,msg))
+        print(curtime+" - "+msg)
         if len(self.logs)>20:
             self.logs = self.logs[1:]
         self.exportLogs()
@@ -253,7 +254,7 @@ class IrcMessage:
 
 
 def handleNoticeMessage(msg):
-    if "The moderators of this room are:" in msg.msg:
+    if "The moderators of this channel are:" in msg.msg:
         #List of mods can be updated
         mods = msg.msg.split(": ")[1]
         for mod in mods.split(", "):
