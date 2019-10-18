@@ -163,37 +163,51 @@ body {{ background: #{background} }}
             filename = name
         self.outputFile(page, filename)
 
+    def connectFtp(self):
+        self.ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass,timeout=30)
+        self.ftp.set_pasv(True)
+        self.ftp.cwd(self.ftpDir)
+        print("FTP Connection Opened at "+datetime.now().ctime())
+
+
     def ftpUpload(self):
+        try:
+            self.ftp.voidcmd("NOOP")
+        except:
+            self.connectFtp()
         if os.path.exists(self.outputLocation+os.sep+self.bot.channel[1:]):
-            ftp = None
+            #ftp = None
             try:
-                ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass,timeout=15)
-                ftp.cwd(self.ftpDir)
+                #ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass,timeout=30)
+                #ftp.set_pasv(True)
+                #print("FTP Connection Opened at "+datetime.now().ctime())
+                #print(self.ftp.pwd())
                 #print(str(ftp.nlst()))
                 for file in os.listdir(self.outputLocation+os.sep+self.bot.channel[1:]):
                     #print("Uploading "+file)
                     filepath = self.outputLocation+os.sep+self.bot.channel[1:]+os.sep+file
                     with open(filepath,'rb') as f:
-                        ftp.storbinary("STOR "+file+".tmp",f)
+                        self.ftp.storbinary("STOR "+file+".tmp",f)
                     #print(file+" uploaded")
                     #sleep(1)
                     #ftp.rename(file+".tmp",file)
                     #print("Renamed "+file)
-                for file in ftp.nlst():
+                for file in self.ftp.nlst():
                     if ".tmp" in file:
-                        ftp.rename(file,file[:-4])
+                        self.ftp.rename(file,file[:-4])
 
             except ftplib.all_errors as e:
-                print("Encountered an error trying to deal with the FTP connection: "+str(e))
+                print("Encountered an error trying to deal with the FTP connection at "+datetime.now().ctime()+": "+str(e))
                 print_exc()
                 
-            if ftp is not None:
-                try:
-                    ftp.quit()
-                except ftplib.all_errors as e:
-                    print ("Encountered an error when trying to quit FTP connection: "+str(e))
-                    print_exc()
-                    ftp.close()
+            #if ftp is not None:
+            #    try:
+            #        ftp.quit()
+            #        print("FTP Connection gracefully closed at "+datetime.now().ctime())
+            #    except ftplib.all_errors as e:
+            #        print ("Encountered an error when trying to quit FTP connection: "+str(e))
+            #        print_exc()
+            #        ftp.close()
 
     def __init__(self,bot,name):
         super(WebsiteOutput,self).__init__(bot,name)
@@ -213,6 +227,9 @@ body {{ background: #{background} }}
                 self.ftpDir = f.readline().strip('\n')
         except FileNotFoundError:
             pass #No FTP cred file found.  Just won't try to upload.
+
+        if self.ftpDir:
+            self.connectFtp()
 
 
     def handleFeature(self,sock):
@@ -244,6 +261,13 @@ body {{ background: #{background} }}
 
             if self.ftpUrl!="":
                 #print("Number of living threads before: "+str(threading.active_count()))
+
+                #Check to see if FTP connection is ok, reconnect if not
+                try:
+                    self.ftp.voidcmd("NOOP")
+                except:
+                    self.connectFtp()
+
                 uploadThread = threading.Thread(target=self.ftpUpload)
                 uploadThread.start()
                 #print("Number of living threads after: "+str(threading.active_count()))
