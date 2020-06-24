@@ -197,18 +197,23 @@ body {{ background: #{background} }}
                         self.ftp.rename(file,file[:-4])
 
             except ftplib.all_errors as e:
-                print("Encountered an error trying to deal with the FTP connection at "+datetime.now().ctime()+": "+str(e))
-                print_exc()
-                
-            #if ftp is not None:
-            #    try:
-            #        ftp.quit()
-            #        print("FTP Connection gracefully closed at "+datetime.now().ctime())
-            #    except ftplib.all_errors as e:
-            #        print ("Encountered an error when trying to quit FTP connection: "+str(e))
-            #        print_exc()
-            #        ftp.close()
-
+                print("Encountered an error "+str(type(e))+" trying to deal with the FTP connection at "+datetime.now().ctime()+": "+str(e))
+                print_exc()                
+                if self.ftp is not None:
+                    try:
+                        self.ftp.quit()
+                        print("FTP Connection gracefully closed at "+datetime.now().ctime())
+                    except ftplib.all_errors as e:
+                        print ("Encountered an error when trying to quit FTP connection: "+str(e))
+                        print_exc()
+                        self.ftp.close()
+    def uploadTask(self):
+        print("Upload Task Started")
+        while(True):
+            if self.startUpload:                   
+                self.ftpUpload()
+                self.startUpload = False
+            
     def __init__(self,bot,name):
         super(WebsiteOutput,self).__init__(bot,name)
         self.htmlUpdateFreq = 120 #600 #In units based on the pollFreq (In astronomibot.py)
@@ -218,6 +223,7 @@ body {{ background: #{background} }}
         self.ftpPass=""
         self.ftpUrl=""
         self.ftpDir=""
+        self.startUpload = False
         self.refreshFreq=int((bot.pollFreq * self.htmlUpdateFreq)/2)
         try:
             with open(ftpCredFile) as f:
@@ -228,8 +234,9 @@ body {{ background: #{background} }}
         except FileNotFoundError:
             pass #No FTP cred file found.  Just won't try to upload.
 
-        if self.ftpDir:
-            self.connectFtp()
+        self.uploadThread = threading.Thread(target=self.uploadTask)
+        self.uploadThread.start()
+
 
 
     def handleFeature(self,sock):
@@ -260,14 +267,11 @@ body {{ background: #{background} }}
             self.generateTablePage([indexTable],"Astronomibot","","index")
 
             if self.ftpUrl!="":
-                #print("Number of living threads before: "+str(threading.active_count()))
-
-                #Check to see if FTP connection is ok, reconnect if not
-                try:
-                    self.ftp.voidcmd("NOOP")
-                except:
-                    self.connectFtp()
-
-                uploadThread = threading.Thread(target=self.ftpUpload)
-                uploadThread.start()
+                #This should probably be more threadsafe, but it's probably fine considering the low risk
+                self.startUpload=True
+                if not self.uploadThread.is_alive():
+                    self.uploadThread = threading.Thread(target=self.uploadTask)
+                    self.uploadThread.start()                    
+                #uploadThread = threading.Thread(target=self.ftpUpload)
+                #uploadThread.start()
                 #print("Number of living threads after: "+str(threading.active_count()))

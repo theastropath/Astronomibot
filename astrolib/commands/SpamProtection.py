@@ -61,8 +61,6 @@ class SpamProtection(Command):
         self.offenders = []
         self.emoteList = {}
 
-        self.loadTwitchEmotes()
-
     def getParams(self):
         params = []
         params.append({'title':'AsciiLimit','desc':'Number of non-standard characters allowed in a message before the user is warned','val':self.maxAsciiSpam})
@@ -94,13 +92,9 @@ class SpamProtection(Command):
         return nonAlnumCount
 
     def emoteSpamCheck(self,msg,userLevel):
-        emoteCount = 0
-        for emote in self.emoteList:
-            matches = self.emoteList[emote].findall(msg.msg)
-            if len(matches)>0:
-                #print("In message '"+msg.msg+"', Found "+str(len(matches))+" of "+emote)
-                emoteCount = emoteCount + len(matches)
-        return emoteCount
+        if msg.tags and 'emotes' in msg.tags:
+            return len(msg.tags['emotes'])
+        return 0
 
     def urlSpamCheck(self,msg,userLevel):
         matchedUrls = grabUrls(msg.msg)
@@ -149,34 +143,21 @@ class SpamProtection(Command):
                 response = response + " ("+str(timeoutLength)+" second time out)"
                 toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
                 sock.sendall(toMsg.encode('utf-8'))
-
-
+                
             else:
                 offender.warn()
                 response = response + " (Warning)"
+                toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
+                sock.sendall(toMsg.encode('utf-8'))
+
         else:
             offender = SpamOffender(msg.sender)
             self.offenders.append(offender)
             response = response + " (Warning)"
-
-
-
+            toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
+            sock.sendall(toMsg.encode('utf-8'))
 
         sockResponse = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
         sock.sendall(sockResponse.encode('utf-8'))
 
         return response
-
-    def loadTwitchEmotes(self):
-        emotes = None
-        attempts=0
-        while emotes is None and attempts<=3:
-            emotes = self.bot.api.getTwitchEmotes2()
-            attempts+=1
-            time.sleep(5)
-        if emotes is not None:
-            for emote in emotes:
-                #self.emoteList[emote["regex"]] = re.compile("\\b"+emote["regex"]+"\\b")
-                self.emoteList[emote["code"]] = re.compile("\\b"+emote["code"]+"\\b")
-        else:
-            print("Failed to load emotes")

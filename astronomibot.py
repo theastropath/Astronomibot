@@ -6,7 +6,6 @@ from socket import *
 from datetime import datetime
 import os
 import sys
-import imp
 import traceback
 from collections import OrderedDict
 
@@ -40,6 +39,32 @@ running = True
 
 
 ###############################################################################################################
+
+def load_module_from_file(module_name, module_path):
+    """Loads a python module from the path of the corresponding file.
+    Args:
+        module_name (str): namespace where the python module will be loaded,
+            e.g. ``foo.bar``
+        module_path (str): path of the python file containing the module
+    Returns:
+        A valid module object
+    Raises:
+        ImportError: when the module can't be loaded
+        FileNotFoundError: when module_path doesn't exist
+    """
+    if sys.version_info[0] == 3 and sys.version_info[1] >= 5:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    elif sys.version_info[0] == 3 and sys.version_info[1] < 5:
+        import importlib.machinery
+        loader = importlib.machinery.SourceFileLoader(module_name, module_path)
+        module = loader.load_module()
+    elif sys.version_info[0] == 2:
+        import imp
+        module = imp.load_source(module_name, module_path)
+    return module
 
 class Bot:
 
@@ -137,6 +162,8 @@ class Bot:
         for chatter in chatterList:
             chat.append((chatter,userLevelToStr(self.getUserLevel(chatter))))
         return chat
+    
+
 
     def checkCommandsAndFeatures(self):
         commandFiles = []
@@ -155,7 +182,7 @@ class Bot:
         for command in commandFiles:
 
             #Load file, and get the corresponding class in it, then instantiate it
-            c = imp.load_source('astrolib.commands.'+command, os.path.join(commandsDir, command+".py"))
+            c = load_module_from_file('astrolib.commands.'+command, os.path.join(commandsDir, command+".py"))
             try:
                 cmd = getattr(c,command)
                 self.commands[command] = cmd(self, command)
@@ -167,7 +194,7 @@ class Bot:
         featureFiles.sort()
         for feature in featureFiles:
             #Load file, and get the corresponding class in it, then instantiate it
-            f = imp.load_source('astrolib.features.'+feature, os.path.join(featuresDir, feature+".py"))
+            f = load_module_from_file('astrolib.features.'+feature, os.path.join(featuresDir, feature+".py"))
             try:
                 feat = getattr(f,feature)
                 self.features[feature] = feat(self, feature)
@@ -194,11 +221,30 @@ class Bot:
 ##############################################################################################
 class IrcMessage:
     def __init__(self, message):
+        #print(message)
         msgstr = message.rstrip()
-        breakdown = msgstr.split(None, 2)
-        prefix = breakdown[0]
-        messageType = breakdown[1]
-        rest = breakdown[2] if len(breakdown) > 2 else ''
+        if (msgstr.startswith("PING")):
+            breakdown = msgstr.split(None,1)
+            messageType = breakdown[0]
+            rest = breakdown[1]
+            tags = None
+            
+        elif msgstr[0]=="@":
+            breakdown = msgstr.split(None, 3)
+            #print("Has tags")
+            #Has tags, need to shift everything by one
+            tags = breakdown[0]
+            prefix = breakdown[1]
+            messageType = breakdown[2]
+            rest = breakdown[3] if len(breakdown) > 3 else ''
+        else:
+            #print("Has no tags")
+            breakdown = msgstr.split(None, 2)
+            tags = None
+            prefix = breakdown[0]
+            messageType = breakdown[1]
+            rest = breakdown[2] if len(breakdown) > 2 else ''
+
         #To determine what type of message it is, we can simply search
         #for the message type in the message.  However, we also need to
         #make sure it isn't just a user typing in a message type...
@@ -208,6 +254,25 @@ class IrcMessage:
         self.sender = ''
         self.channel = ''
         self.msg = ''
+        self.tags = None
+
+        if tags:
+            #Parse tags
+            tags = tags[1:] #Strip the @ off the front
+            tagList = tags.split(";")
+            #print(str(tagList))
+            tagDict = {}
+            for tag in tagList:
+                splitTag = tag.split("=",1)
+                if len(splitTag)>1 and len(splitTag[1])>0:
+                    tagName = splitTag[0]
+                    if "," in splitTag[1]:
+                        tagVal = splitTag[1].split(",")
+                    else:
+                        tagVal = splitTag[1]
+                    tagDict[tagName]=tagVal
+            self.tags = tagDict
+            #print(str(tagDict))
 
         if messageType == 'PRIVMSG':
             breakdown = rest.split(None, 1)
@@ -254,7 +319,7 @@ class IrcMessage:
 
 
 def handleNoticeMessage(msg):
-    if "The moderators of this channel are:" in msg.msg:
+    if msg.tags and msg.tags['msg-id']=='room_mods':
         #List of mods can be updated
         mods = msg.msg.split(": ")[1]
         for mod in mods.split(", "):
@@ -296,6 +361,7 @@ def connectToServer():
         b"NICK "+nick.encode('ascii')+b"\n"+
         b"JOIN "+channel.encode('ascii')+b"\n"+
         b"CAP REQ :twitch.tv/commands\n"+
+        b"CAP REQ :twitch.tv/tags\n"+
         b"CAP REQ :twitch.tv/membership\n")
 
     modUpdate = 1 #Start at 1 so that it will grab the mod list on the first pass
