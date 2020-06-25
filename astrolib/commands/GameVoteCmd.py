@@ -154,12 +154,14 @@ class GameVoteCmd(Command):
         gamestatus=[]
 
         if self.credsAvailable:
+            columnOffset = ord(self.statusColumn) - ord(self.gameColumn)
+            
             gamesResp = Session().get(self.gameUrl,headers={'Accept':'application/json'})
             gamesJson = json.loads(gamesResp.text)
             for game in gamesJson['values']:
                 newGame = [game[0]]
-                if len(game)==7:
-                    newGame.append(game[6])
+                if len(game)==columnOffset+1:
+                    newGame.append(game[columnOffset])
                 else:
                     newGame.append("")
                 gamestatus.append(newGame)
@@ -169,12 +171,14 @@ class GameVoteCmd(Command):
         randostatus=[]
 
         if self.credsAvailable:
+            columnOffset = ord(self.randoStatusColumn) - ord(self.randoGameColumn)
+
             randoResp = Session().get(self.randoUrl,headers={'Accept':'application/json'})
             randoJson = json.loads(randoResp.text)
             for game in randoJson['values']:
                 newGame = [game[0]]
-                if len(game)==6:
-                    newGame.append(game[5])
+                if len(game)==columnOffset+1:
+                    newGame.append(game[columnOffset])
                 else:
                     newGame.append("")
                 randostatus.append(newGame)
