@@ -5,11 +5,11 @@ A little Twitch bot I've been working on
 Setup:
 -------
 Create a file called "creds.txt" in the working directory where you're running Astronomibot.  
-The first line of this file should be the username of your bot.  
-The second line of the file should be the Twitch chat oauth key to log in as that user (NOT the password for the account!)
-The third line of the file should be the client ID for the application
-The fourth line should be the client secret for the application
-Fifth line, access token, retrieved as per below:
+   * The first line of this file should be the username of your bot.  
+   * The second line of the file should be the Twitch chat oauth key to log in as that user (NOT the password for the account!)
+   * The third line of the file should be the client ID for the application
+   * The fourth line should be the client secret for the application
+   * Fifth line, access token, retrieved as per below:
 
 Chat OAuth Key:
 ----------------
@@ -55,42 +55,42 @@ Alternately, use the token generator available at https://twitchapps.com/tokenge
 
 ## FTP Website Uploading
 Create a file called 'ftpcreds.txt' with four lines
-The first line is the URL to connect to with FTP
-The second line is the username to log in with
-The third line is the password to log in
-The fourth line is the folder to upload into
+   * The first line is the URL to connect to with FTP
+   * The second line is the username to log in with
+   * The third line is the password to log in
+   * The fourth line is the folder to upload into
 
 ## Twitter tweets when Live
 Create a file called 'twittercreds.txt' with four lines
-The first line is your Twitter consumer key
-The second line is your consumer secret
-The third line is your access token
-The fourth line is your access token secret
+   * The first line is your Twitter consumer key
+   * The second line is your consumer secret
+   * The third line is your access token
+   * The fourth line is your access token secret
 
 For information on obtaining those, read https://developer.twitter.com/en/docs/labs/filtered-stream/quick-start
 
 ## Discord message when Live
 Create a file called 'discordcreds.txt' with 6 lines
-The first line is your Discord Client ID
-The second line is your Discord Client Secret
-The third line is your Discord User Name (Including the distinguisher)
-The fourth line is your Discord User ID
-The fifth line is your Discord Access Token
-The sixth line is the channel ID where you want the notifications posted
+   * The first line is your Discord Client ID
+   * The second line is your Discord Client Secret
+   * The third line is your Discord User Name (Including the distinguisher)
+   * The fourth line is your Discord User ID
+   * The fifth line is your Discord Access Token
+   * The sixth line is the channel ID where you want the notifications posted
 
 ## Game Voting Support
 Create a Google Sheets document with a list of games.  It must have at least a column containing game names, and another column for the game status.
 Next, create a file called 'gamevotecreds.txt' with 10 lines
-The first line is your Google Sheets API Key
-The second line is the sheet ID of the document you created
-The third line is the name of the sheet containing regular games
-The fourth line is the column letter containing the list of game names
-The fifth line is the column letter containing the status of those games
-The sixth line is the row number of the first game in the list
-The seventh line is the name of the sheet containing the list of randomizer games
-The eight line is the column letter containing the list of randomizer game names
-The ninth line is the column letter containing the status of those randomizer games
-The tenth line is the row number of the first randomizer name in the list
+   * The first line is your Google Sheets API Key
+   * The second line is the sheet ID of the document you created
+   * The third line is the name of the sheet containing regular games
+   * The fourth line is the column letter containing the list of game names
+   * The fifth line is the column letter containing the status of those games
+   * The sixth line is the row number of the first game in the list
+   * The seventh line is the name of the sheet containing the list of randomizer games
+   * The eight line is the column letter containing the list of randomizer game names
+   * The ninth line is the column letter containing the status of those randomizer games
+   * The tenth line is the row number of the first randomizer name in the list
 
 
 # Dependencies:
