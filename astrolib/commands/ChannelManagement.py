@@ -57,12 +57,12 @@ class ChannelManagement(Command):
         #print("Client ID is "+str(self.bot.clientId))
         #print ("Access Token is "+str(self.bot.accessToken))
         if fullmsg[0] == "!setgame":
-            if self.bot.api.setGame(self.bot.channelId, restOfMsg):
+            if self.bot.api.setGameByIdHelix(self.bot.channelId, restOfMsg):
                 textResponse = "Setting game to '"+restOfMsg+"'"
             else:
                 textResponse = "Failed to change game"
         elif fullmsg[0] == "!settitle":
-            if self.bot.api.setTitle(self.bot.channelId, restOfMsg):
+            if self.bot.api.setTitleByIdHelix(self.bot.channelId, restOfMsg):
                 textResponse = "Setting stream title to '"+restOfMsg+"'"
             else:
                 textResponse = "Failed to change stream title"

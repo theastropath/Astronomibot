@@ -64,7 +64,7 @@ class LiveNotifications(Feature):
         #If live, check to see how long channel has been live
         #If live for less than liveCheckFrequency, stay offline
         #Else, mark channel as live so that no notification goes out
-        startTime = self.bot.api.getStreamLiveTime(self.bot.channelId)
+        startTime = self.bot.api.getStreamLiveTimeHelix(self.bot.channelName)
         if startTime is not None:
             epochStartTime = calendar.timegm(startTime)
             curEpochTime = time.time()
@@ -108,8 +108,8 @@ class LiveNotifications(Feature):
 
 
     def sendNotifications(self):
-        notifyMsg = self.bot.api.getTitle(self.bot._channelId)
-        notifyUrl = self.bot.api.getChannelUrl(self.bot._channelId)
+        notifyMsg = self.bot.api.getTitleByNameHelix(self.bot.channelName)
+        notifyUrl = self.bot.api.getChannelUrlFromNameHelix(self.bot.channelName)
         
         if self.tweet:
             self.sendTweet(notifyMsg, notifyUrl)
@@ -124,7 +124,7 @@ class LiveNotifications(Feature):
 
             self.liveCheck = self.liveCheckFrequency
 
-            online =  self.bot.api.isStreamOnline(self.bot.channelId)
+            online =  self.bot.api.isStreamOnlineHelix(self.bot.channelName)
             if (online and not self.live):
                 self.bot.addLogMessage("Stream has gone live")
                 self.live = True

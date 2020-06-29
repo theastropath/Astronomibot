@@ -91,6 +91,7 @@ class Bot:
         self.logFile = "ActionLog.txt"
         self.channel = channel
         self._channelId = None
+        self.channelName = channel[1:]
         self.regulars = []
         self.pollFreq = pollFreq
         self.name = nick
@@ -101,7 +102,7 @@ class Bot:
     @property
     def channelId(self):
         if self._channelId is None:
-            self._channelId = self.api.getChannelId()
+            self._channelId = self.api.getChannelIdHelix()
         return self._channelId
 
     def getCommands(self):

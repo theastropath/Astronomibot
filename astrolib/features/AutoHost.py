@@ -88,7 +88,7 @@ class AutoHost(Feature):
 
             self.hostUpdate = self.hostCheckFrequency
 
-            if not self.bot.api.isStreamOnline(self.bot.channelId):
+            if not self.bot.api.isStreamOnlineHelix(self.bot.channelName):
                 #Stream must be offline for several checks in a row
                 #(To prevent an occasional lookup failure from hosting during a stream)
                 self.offlineTime += 1
@@ -104,13 +104,14 @@ class AutoHost(Feature):
                 #Stream is offline.
                 if self.hosting:
                     #Check if hosted channel is still online, and stop hosting if not
-                    hostChannelId = self.bot.api.getChannelIdFromName(self.hostChannel)
-                    if not self.bot.api.isStreamOnline(hostChannelId):
+                    #hostChannelId = self.bot.api.getChannelIdFromName(self.hostChannel)
+                    if not self.bot.api.isStreamOnlineHelix(self.hostChannel):
                         #Hosted channel is no longer online, stop hosting
                         self.stopHosting(sock)
 
                     #Make sure we are still hosting a channel
                     #If not, mark us as not hosting
+                if self.hosting:
                     if not self.bot.api.isHosting(self.bot.channelId):
                         self.stopHosting(sock)
                     else:
@@ -123,8 +124,8 @@ class AutoHost(Feature):
                 #Check for channels in host list that are online
                 if not self.hosting or checkForNewHost:
                     for channel in self.hostList:
-                        hostChannelId = self.bot.api.getChannelIdFromName(channel)
-                        if self.bot.api.isStreamOnline(hostChannelId):
+                        #hostChannelId = self.bot.api.getChannelIdFromName(channel)
+                        if self.bot.api.isStreamOnlineHelix(channel):
                             if not checkForNewHost: #IN the normal case, just host the highest priority stream
                                 self.startHosting(channel,sock)
                                 return

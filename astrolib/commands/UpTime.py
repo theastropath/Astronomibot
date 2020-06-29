@@ -30,7 +30,7 @@ class UpTime(Command):
         return False
 
     def getStreamLiveTime(self):
-        startTime = self.bot.api.getStreamLiveTime(self.bot.channelId)
+        startTime = self.bot.api.getStreamLiveTimeHelix(self.bot.channelName)
         if startTime is not None:
             epochStartTime = calendar.timegm(startTime)
             curEpochTime = time.time()
@@ -44,7 +44,7 @@ class UpTime(Command):
         tables = []
 
         live = "No"
-        if self.bot.api.isStreamOnline(self.bot.channelId):
+        if self.bot.api.isStreamOnlineHelix(self.bot.channelName):
             live = "Yes"
 
         state=[]
@@ -73,7 +73,7 @@ class UpTime(Command):
     def respond(self,msg,sock):
         response = ""
 
-        if not self.bot.api.isStreamOnline(self.bot.channelId):
+        if not self.bot.api.isStreamOnlineHelix(self.bot.channelName):
             response = "Stream is not live"
         else:
             response = "Stream has been live for %s" % self.getStreamLiveTime()

@@ -53,8 +53,23 @@ class TwitchApi:
             return json.loads(response.text)
         except:
             return None
+        
+    def _helixRequest(self, url, data=None, method='GET'):
+        if data is not None:
+            data = json.dumps(data).encode('utf-8')
 
+        response = self.session.request(method, url, data=data, headers={
+            'Client-ID': self.clientId,
+            'Authorization': 'Bearer '+self.accessToken,
+            'Content-Type': 'application/json'
+        })
+        try:
+            return json.loads(response.text)
+        except:
+            return None
+        
     def setGame(self, channelId, game):
+        print("setGame DEPRECATED")
         if channelId is None:
             return False
 
@@ -69,6 +84,7 @@ class TwitchApi:
         return False
 
     def setTitle(self, channelId, title):
+        print("setTitle DEPRECATED")
         if channelId is None:
             return False
 
@@ -83,6 +99,8 @@ class TwitchApi:
         return False
 
     def getTitle(self,channelId):
+        print("getTitle DEPRECATED")
+        
         if channelId is None:
             return ""
         try:
@@ -94,6 +112,7 @@ class TwitchApi:
         return ""
 
     def getChannelUrl(self,channelId):
+        print("getChannelUrl DEPRECATED")
         if channelId is None:
             return ""
         try:
@@ -107,6 +126,7 @@ class TwitchApi:
 
 
     def getTwitchEmotes(self):
+        print("getTwitchEmotes DEPRECATED")
         emotes = self._idedRequest('https://api.twitch.tv/kraken/chat/emoticons')
         if emotes is not None and "emoticons" in emotes.keys():
             return emotes['emoticons']
@@ -115,6 +135,7 @@ class TwitchApi:
             return None
         
     def getTwitchEmotes2(self):
+        print("getTwitchEmotes2 DEPRECATED")
         emotes = self._idedRequest('https://api.twitch.tv/kraken/chat/emoticon_images')
         if emotes is not None and "emoticons" in emotes.keys():
             return emotes['emoticons']
@@ -123,6 +144,7 @@ class TwitchApi:
             return None
         
     def isStreamOnline(self, channelId):
+        print("isStreamOnline DEPRECATED")
         if channelId == None:
             return False
         try:
@@ -139,6 +161,8 @@ class TwitchApi:
         return False
 
     def getStreamLiveTime(self, channelId):
+        print("getStreamLiveTime DEPRECATED")
+
         try:
             streamState = self._idedRequest("https://api.twitch.tv/kraken/streams/"+channelId)
             if streamState and 'stream' in streamState:
@@ -152,6 +176,7 @@ class TwitchApi:
         return None
 
     def getChannelId(self):
+        print("getChannelId DEPRECATED")
         try:
             channels = self._authRequest("https://api.twitch.tv/kraken/channel")
             chanId = channels['_id']
@@ -163,6 +188,7 @@ class TwitchApi:
         return None
 
     def getChannelIdFromName(self,username):
+        print("getChannelIdFromName DEPRECATED")
         try:
             users = self._idedRequest("https://api.twitch.tv/kraken/users?login="+username+"&api_version=5")
             if users and 'users' in users:
@@ -235,3 +261,154 @@ class TwitchApi:
     def getModerators(self, channelName):
         chatterMap = self.getChatters(channelName)
         return chatterMap["moderators"] if chatterMap else []
+
+
+    def getStreamFromNameHelix(self,username):
+        try:
+            stream = self._helixRequest("https://api.twitch.tv/helix/streams?user_login="+username)
+            return stream
+        except HTTPError as e:
+            print("getStreamFromNameHelix: "+str(e))
+
+        return None
+
+    def getChannelFromIdHelix(self,broadcaster_id):
+        try:
+            channel = self._helixRequest("https://api.twitch.tv/helix/channels?broadcaster_id="+broadcaster_id)
+            #print(str(channel))
+            return channel
+        except HTTPError as e:
+            print("getChannelFromIdHelix: "+str(e))
+
+        return None
+    
+    def getUserIdFromNameHelix(self,name):
+        try:
+            user = self._helixRequest("https://api.twitch.tv/helix/users?login="+name)
+            #print(str(user))
+            if len(user["data"])!=0:
+                info = user["data"][0]
+                if "id" in info:
+                    return info["id"]
+        except HTTPError as e:
+            print("getChannelFromIdHelix: "+str(e))
+
+        return None
+    
+    def getChannelFromNameHelix(self,name):
+        userid = self.getUserIdFromNameHelix(name)
+        if userid:
+            try:
+                channel = self._helixRequest("https://api.twitch.tv/helix/channels?broadcaster_id="+userid)
+                return channel
+            except HTTPError as e:
+                print("getChannelFromIdHelix: "+str(e))
+
+        return None
+
+    def isStreamOnlineHelix(self,username):
+        stream = self.getStreamFromNameHelix(username)
+        if stream:
+            if "data" in stream:
+                return len(stream["data"])!=0
+        return False
+
+    def getStreamLiveTimeHelix(self, username):
+        stream = self.getStreamFromNameHelix(username)
+        if stream:
+            if "data" in stream:
+                if len(stream["data"])!=0:
+                    liveTime = stream["data"][0]['started_at']
+                    return time.strptime(liveTime, '%Y-%m-%dT%H:%M:%SZ')
+        return None
+
+    def getChannelIdHelix(self):
+        try:
+            user = self._helixRequest("https://api.twitch.tv/helix/users")
+            #print(str(user))
+            if len(user["data"])!=0:
+                info = user["data"][0]
+                if "id" in info:
+                    return info["id"]
+        except HTTPError as e:
+            print("getChannelFromIdHelix: "+str(e))
+
+        return None
+
+    def getChannelUrlFromIdHelix(self,userid):
+        channel = self.getChannelFromIdHelix(userid)
+        if channel and "data" in channel and len(channel["data"])!=0:
+            channelname = channel["data"][0]["broadcaster_name"]
+            return "https://Twitch.tv/"+channelname
+        return None
+
+    def getChannelUrlFromNameHelix(self,username):
+        channel = self.getChannelFromNameHelix(username)
+        if channel and "data" in channel and len(channel["data"])!=0:
+            channelname = channel["data"][0]["broadcaster_name"]
+            return "https://Twitch.tv/"+channelname
+        return None
+        
+    def getTitleByNameHelix(self,username):
+        channel = self.getChannelFromNameHelix(username)
+        if channel and ("data" in channel) and len(channel["data"])!=0:
+            return channel["data"][0]["title"]
+        return ""
+
+    def getGameByNameHelix(self,username):
+        channel = self.getChannelFromNameHelix(username)
+        if channel and ("data" in channel) and len(channel["data"])!=0:
+            return channel["data"][0]["game_name"]
+        return ""
+
+    def getGameIdByNameHelix(self,gamename):
+        try:
+            game = self._helixRequest("https://api.twitch.tv/helix/games?name="+gamename)
+            if game and ("data" in game) and len(game["data"])!=0:
+                return game["data"][0]["id"]
+            #print(str(game))
+        except HTTPError as e:
+            print("getGameIdByNameHelix: "+str(e))
+
+        return None
+        
+
+    def setGameByIdHelix(self,channelId,game):
+        gameId = self.getGameIdByNameHelix(game)
+        if gameId == None:
+            return False
+        data = {"game_id": gameId}
+        try:
+            result = self._helixRequest("https://api.twitch.tv/helix/channels?broadcaster_id=%s" % channelId, data, 'PATCH')
+            #print(str(result))
+            return True
+
+        except HTTPError as e:
+            print("setGameByNameHelix: "+str(e))
+
+        return False
+
+    def setGameByNameHelix(self,username,game):
+        channelId = self.getUserIdFromNameHelix(username)
+        if channelId:
+            return self.setGameByIdHelix(channelId,game)
+        return False
+    
+    def setTitleByIdHelix(self,channelId,title):
+        data = {"title": title}
+        try:
+            result = self._helixRequest("https://api.twitch.tv/helix/channels?broadcaster_id=%s" % channelId, data, 'PATCH')
+            #print(str(result))
+            return True
+
+        except HTTPError as e:
+            print("setTitleByNameHelix: "+str(e))
+
+        return False
+
+    def setTitleByNameHelix(self,username,title):
+        channelId = self.getUserIdFromNameHelix(username)
+        if channelId:
+            return self.setTitleByIdHelix(channelId,title)
+        return False
+    
