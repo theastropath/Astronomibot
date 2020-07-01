@@ -161,7 +161,7 @@ class Bot:
         chatterList = self.chatters
         chatterList.sort()
         for chatter in chatterList:
-            chat.append((chatter,userLevelToStr(self.getUserLevel(chatter))))
+            chat.append((chatter,userLevelToStr(self.getUserLevel(chatter,None))))
         return chat
     
 
@@ -205,7 +205,21 @@ class Bot:
                 print("Couldn't load feature module '"+feature+"'")
 
 
-    def getUserLevel(self,userName):
+    def getUserLevel(self,userName, msg):
+        if msg and msg.tags:  #If we have the actual message, we can figure things out more quickly
+            if "room-id" in msg.tags and "user-id" in msg.tags and msg.tags["room-id"]==msg.tags["user-id"]:
+                return BROADCASTER
+            elif "mod" in msg.tags and msg.tags["mod"]=="1":
+                return MOD
+            elif "subscriber" in msg.tags and msg.tags["subscriber"]=="1": #If they care enough to give me money, they are probably a regular
+                return REGULAR
+            elif "badges" in msg.tags and msg.tags["badges"]!=None:
+                for badge in msg.tags["badges"]:
+                    if badge[0]=="vip":
+                        return REGULAR
+            
+
+        
         if userName==self.channel[1:]:
             #print(userName+" identified as broadcaster!")
             return BROADCASTER
@@ -486,7 +500,7 @@ if __name__ == "__main__":
 
 
                 for command in bot.getCommands():
-                    if command.shouldRespond(msg,bot.getUserLevel(msg.sender)):
+                    if command.shouldRespond(msg,bot.getUserLevel(msg.sender,msg)):
                         try:
                             response = command.respond(msg,sock)
                         except BrokenPipeError:
