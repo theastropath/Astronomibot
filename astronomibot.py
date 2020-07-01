@@ -251,6 +251,8 @@ class IrcMessage:
                     tagVal = restOfTag
 
                 tagDict[tagName]=tagVal
+            else:
+                tagDict[splitTag[0]]=None
         return tagDict
     
     def __init__(self, message):

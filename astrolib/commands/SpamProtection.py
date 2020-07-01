@@ -92,7 +92,7 @@ class SpamProtection(Command):
         return nonAlnumCount
 
     def emoteSpamCheck(self,msg,userLevel):
-        if msg.tags and 'emotes' in msg.tags:
+        if msg.tags and 'emotes' in msg.tags and msg.tags["emotes"]!=None:
             emoteCount = 0
             for emoteLocs in msg.tags["emotes"].values():
                 emoteCount+=len(emoteLocs)
