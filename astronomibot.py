@@ -267,10 +267,13 @@ class IrcMessage:
                 splitTag = tag.split("=",1)
                 if len(splitTag)>1 and len(splitTag[1])>0:
                     tagName = splitTag[0]
-                    if "," in splitTag[1]:
-                        tagVal = splitTag[1].split(",")
+                    restOfTag = splitTag[1]
+                    restOfTag=restOfTag.replace(","," ")
+                    restOfTag=restOfTag.replace("/"," ")
+                    if " " in restOfTag:
+                        tagVal = restOfTag.split(" ")
                     else:
-                        tagVal = splitTag[1]
+                        tagVal = [restOfTag]
                     tagDict[tagName]=tagVal
             self.tags = tagDict
             #print(str(tagDict))

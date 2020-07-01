@@ -93,6 +93,8 @@ class SpamProtection(Command):
 
     def emoteSpamCheck(self,msg,userLevel):
         if msg.tags and 'emotes' in msg.tags:
+            #print("Detected "+str(len(msg.tags['emotes']))+" emotes")
+            #print(str(msg.tags['emotes']))
             return len(msg.tags['emotes'])
         return 0
 
