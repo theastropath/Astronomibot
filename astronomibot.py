@@ -347,6 +347,7 @@ def handleNoticeMessage(msg):
     if msg.tags and msg.tags['msg-id']=='room_mods':
         #List of mods can be updated
         mods = msg.msg.split(": ")[1]
+        bot.modList = []
         for mod in mods.split(", "):
             bot.modList.append(mod.strip())
     else:
