@@ -93,9 +93,10 @@ class SpamProtection(Command):
 
     def emoteSpamCheck(self,msg,userLevel):
         if msg.tags and 'emotes' in msg.tags:
-            #print("Detected "+str(len(msg.tags['emotes']))+" emotes")
-            #print(str(msg.tags['emotes']))
-            return len(msg.tags['emotes'])
+            emoteCount = 0
+            for emoteLocs in msg.tags["emotes"].values():
+                emoteCount+=len(emoteLocs)
+            return emoteCount
         return 0
 
     def urlSpamCheck(self,msg,userLevel):

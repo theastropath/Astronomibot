@@ -221,6 +221,38 @@ class Bot:
 
 ##############################################################################################
 class IrcMessage:
+
+    def parseTags(self,tags):
+        tagDict = {}
+        for tag in tags:
+            splitTag = tag.split("=",1)
+            if len(splitTag)>1 and len(splitTag[1])>0:
+                tagName = splitTag[0]
+                restOfTag = splitTag[1]
+                tagVal = restOfTag
+                if tagName == "emotes":
+                    #Generate a dictionary giving a list of locations for each emote type
+                    emoteList = {}
+                    emoteTypes = restOfTag.split("/")
+                    for emoteType in emoteTypes:
+                        emote = emoteType.split(":")
+                        emoteNum = emote[0]
+                        emoteLocs = emote[1].split(",")
+                        emoteList[emoteNum]=emoteLocs
+                    tagVal = emoteList
+                elif tagName == "badges" or tagName == "badge-info":
+                    badges = restOfTag.split(",")
+                    badgeList = []
+                    for badge in badges:
+                        badgeInfo = badge.split("/")
+                        badgeList.append(badgeInfo)
+                    tagVal = badgeList
+                else:
+                    tagVal = restOfTag
+
+                tagDict[tagName]=tagVal
+        return tagDict
+    
     def __init__(self, message):
         #print(message)
         msgstr = message.rstrip()
@@ -262,21 +294,8 @@ class IrcMessage:
             tags = tags[1:] #Strip the @ off the front
             tagList = tags.split(";")
             #print(str(tagList))
-            tagDict = {}
-            for tag in tagList:
-                splitTag = tag.split("=",1)
-                if len(splitTag)>1 and len(splitTag[1])>0:
-                    tagName = splitTag[0]
-                    restOfTag = splitTag[1]
-                    restOfTag=restOfTag.replace(","," ")
-                    restOfTag=restOfTag.replace("/"," ")
-                    if " " in restOfTag:
-                        tagVal = restOfTag.split(" ")
-                    else:
-                        tagVal = [restOfTag]
-                    tagDict[tagName]=tagVal
-            self.tags = tagDict
-            #print(str(tagDict))
+            self.tags = self.parseTags(tagList)
+            #print(str(self.tags))
 
         if messageType == 'PRIVMSG':
             breakdown = rest.split(None, 1)
