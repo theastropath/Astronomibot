@@ -101,3 +101,4 @@ Next, create a file called 'gamevotecreds.txt' with 10 lines
  * webcolors
  * tweepy
  * requests
+ * urlextract
