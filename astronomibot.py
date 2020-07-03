@@ -8,8 +8,12 @@ import os
 import sys
 import traceback
 from collections import OrderedDict
+import websocket
+import json
+import threading
+from queue import Queue
 
-from astrolib import EVERYONE, REGULAR, MOD, BROADCASTER, userLevelToStr
+from astrolib import *
 from astrolib.api import TwitchApi
 
 twitchIrcServer = "irc.twitch.tv"
@@ -32,6 +36,8 @@ pollFreq=0.5
 recvAmount=4096
 
 running = True
+
+
 
 #modList = [] #List of all moderators for the channel
 #commands = []
@@ -66,6 +72,192 @@ def load_module_from_file(module_name, module_path):
         module = imp.load_source(module_name, module_path)
     return module
 
+###############################################################################################################
+
+class TwitchWebSocketApp(websocket.WebSocketApp):
+    def handleChannelPointRedemption(ws,jsonMsg):
+        if "type" in jsonMsg:
+            #print("Have type: "+str(jsonMsg["type"]))
+            if jsonMsg['type']=="reward-redeemed":
+                #print("Was a redeemed reward")
+                username = ""
+                title = ""
+                userinput = ""
+
+                if "data" in jsonMsg and "redemption" in jsonMsg["data"]:
+                    red = jsonMsg["data"]["redemption"]
+                    if "user" in red and red["user"] and "display_name" in red["user"]:
+                        username = red["user"]["display_name"]
+
+                    if "reward" in red and red["reward"] and "title" in red["reward"]:
+                        title = red["reward"]["title"]
+
+                    if "user_input" in red and red["user_input"]:
+                        userinput = red["user_input"]
+
+                print("Reward was redeemed by "+username+" for: "+title+"   User said: "+userinput)
+                qMsg = {"type":NOTIF_CHANNELPOINTS,"data":{"username":username,"reward":title,"message":userinput}}
+                try:
+                    ws.bot.msgQ.put_nowait(qMsg)
+                except Exception as e:
+                    print("Failed to put channel point redemption on queue: "+str(e))
+
+    def handleSubscriptionEvent(ws,jsonMsg):
+        #print("Was a sub Event")
+        username = ""
+        if "display_name" in jsonMsg:
+            username = jsonMsg["display_name"]
+        recipName = ""
+        if "recipient_display_name" in jsonMsg:
+            recipName = jsonMsg["recipient_display_name"]
+        subplan = ""
+        if "sub_plan" in jsonMsg:
+            subplan = jsonMsg["sub_plan"]
+        usermsg = ""
+        if "sub_message" in jsonMsg:
+            if "message" in jsonMsg["sub_message"]:
+                usermsg = jsonMsg["sub_message"]["message"]
+        cumMonths = 0
+        if "cumulative-months" in jsonMsg:
+            cumMonths = jsonMsg["cumulative-months"]
+        streakMonths = 0
+        if "streak-months" in jsonMsg:
+            streakMonths = jsonMsg["streak-months"]
+        context = ""
+        if "context" in jsonMsg:
+            context = jsonMsg["context"]
+        print("Got a "+context+" from "+username+" at sub plan "+subplan+" with cumulative/streak months of "+str(cumMonths)+"/"+str(streakMonths)+".  Message: "+usermsg)
+        print(str(jsonMsg))
+        qMsg = {"type":NOTIF_SUBSCRIPTION,"data":{"username":username,"recipient":recipName,"subplan":subplan,"message":usermsg,"cumulative":cumMonths,"streak":streakMonths,"context":context}}
+        try:
+            ws.bot.msgQ.put_nowait(qMsg)
+        except Exception as e:
+            print("Failed to put subscription on queue: "+str(e))
+        
+    def handleBitsEvent(ws,jsonMsg):
+        #print("Was a bits Event")
+        if "message_type" in jsonMsg:
+            if jsonMsg["message_type"]=="bits_event":
+                print("Bits Event")
+                if "data" in jsonMsg:
+                    username = ""
+                    bitsUsed = 0
+                    totalBits = 0
+                    chatMsg = ""
+                    
+                    msgData = jsonMsg["data"]
+                    if "user_name" in msgData:
+                        username = msgData["user_name"]
+                    if "bits_used" in msgData:
+                        bitsUsed = msgData["bits_used"]
+                    if "total_bits_used" in msgData:
+                        totalBits = msgData["total_bits_used"]
+                    if "chat_message" in msgData:
+                        chatMsg = msgData["chat_message"]
+
+                    print(username+" cheered "+str(bitsUsed)+" bits (Total of "+str(totalBits)+" bits) and said: "+chatMsg)
+                    qMsg = {"type":NOTIF_BITSEVENT,"data":{"username":username,"bits":bitsUsed,"total":totalBits,"message":chatMsg}}
+                    try:
+                        ws.bot.msgQ.put_nowait(qMsg)
+                    except Exception as e:
+                        print("Failed to put bits event on queue: "+str(e))
+
+                    
+            else:
+                print("Other type: "+jsonMsg["message_type"])
+                
+    def handlePong(ws,msg):
+        #print("Got a Pong")
+        ws.last_pong_tm = time.time()
+
+    def handleMessageByType(ws,msg):
+        #print(str(msg))
+        if "type" in msg:
+            if msg["type"]=="MESSAGE":
+                if "data" in msg and msg["data"]:
+                    msgData = msg["data"]
+                    if "topic" in msgData and "message" in msgData:
+                        #The "message" is a further JSON message contained within a string
+                        jsonMsg = json.loads(msgData["message"])
+                        if "channel-points-channel-v1" in msgData["topic"]:
+                            ws.handleChannelPointRedemption(jsonMsg)
+                        elif "channel-subscribe-events-v1" in msgData["topic"]:
+                            ws.handleSubscriptionEvent(jsonMsg)
+                        elif "channel-bits-events-v2" in msgData["topic"]:
+                            ws.handleBitsEvent(jsonMsg)
+                        else:
+                            print("Got a different message type")
+                            print(str(msgData))
+                    else:
+                        print("It was a message with Data, but not the expected topic and message fields")
+                        print(str(msgData))
+            elif msg["type"]=="PONG":
+                ws.handlePong(msg)
+            elif msg["type"]=="RESPONSE":
+                #print(str(msg))
+                if "error" in msg:
+                    if msg["error"]!="":
+                        print("Got error response: "+msg["error"])
+            else:
+                print("Got something else:")
+                print(str(msg))
+
+    
+    def generateListenMessage(self):
+        message = '{"type":"LISTEN","data":{"topics":["channel-points-channel-v1.'+self.channelId+'","channel-bits-events-v2.'+self.channelId+'", "channel-subscribe-events-v1.'+self.channelId+'"],"auth_token":"'+self.authToken+'"}}'
+        return message
+
+    def generatePingMessage(self):
+        message = '{"type":"PING"}'
+        return message
+
+    def on_open(ws):
+        print("Websocket opened")
+        msg = ws.generateListenMessage()
+        #print("Sending: "+msg)
+        ws.send(msg)
+
+    def on_message(ws,message):
+        #print("Got message")
+        jsonMsg = json.loads(message)
+        #print(str(jsonMsg))
+        ws.handleMessageByType(jsonMsg)
+
+    def on_error(ws,error):
+        print("encountered error")
+        print(error)
+
+    def on_close(ws):
+        print("Websocket closed")
+
+        
+    def __init__(self, url, channelId, authToken, bot, header=None,
+                 on_open=None, on_message=None, on_error=None,
+                 on_close=None, on_ping=None, on_pong=None,
+                 on_cont_message=None,
+                 keep_running=True, get_mask_key=None, cookie=None,
+                 subprotocols=None,
+                 on_data=None):
+        super(TwitchWebSocketApp,self).__init__(url,header,self.on_open,self.on_message,self.on_error,self.on_close,on_ping,on_pong,on_cont_message,keep_running,get_mask_key,cookie,subprotocols,on_data)
+        self.channelId = channelId
+        self.authToken = authToken
+        self.bot = bot
+
+
+    
+    #Override the standard ping behaviour since Twitch doesn't care about that, but wants an actual PING message instead    
+    def _send_ping(self,interval,event):
+        while not event.wait(interval):
+            if self.last_pong_tm != 0:
+                respTime = self.last_pong_tm - self.last_ping_tm
+                if respTime > 10: #Twitch says to reconnect if it takes more than 10 seconds to get a pong back
+                    print("Took "+str(respTime)+" to get back a PONG")
+            self.last_ping_tm = time.time()
+            #print("Send ping")
+            self.send(self.generatePingMessage())
+
+###############################################################################################################
+
 class Bot:
 
     def importLogs(self):
@@ -80,6 +272,16 @@ class Bot:
         except FileNotFoundError:
             print ("Log file is not present")
 
+    def pubSubTask(self):
+        while True:
+            self.pubSub.run_forever(ping_interval=180)
+            time.sleep(1)
+
+    def subToNotification(self,notifType,callback):
+        if notifType not in NOTIF_TYPES:
+            print("Can't subscribe to unknown notification type: "+str(notifType))
+        else:
+            self.notifyList[notifType].append(callback)
 
     def __init__(self, channel, nick, pollFreq, api):
         self.modList = [] #List of all moderators for the channel
@@ -96,6 +298,19 @@ class Bot:
         self.pollFreq = pollFreq
         self.name = nick
         self.api = api
+
+        self.pubSub = TwitchWebSocketApp("wss://pubsub-edge.twitch.tv",self.channelId,self.api.accessToken,self)
+        self.pubSubThread = threading.Thread(target=self.pubSubTask)
+        self.pubSubThread.start()
+
+        #Modules need to register themselves to receive notifications from PubSub
+        #Initialize each notification type as a list for the modules to put themselves into
+        self.notifyList = {}
+        for notifType in NOTIF_TYPES:
+            self.notifyList[notifType]=[]
+
+        self.msgQ = Queue()
+        
         self.importLogs()
 
     # lazily loaded channel ID
@@ -516,6 +731,24 @@ if __name__ == "__main__":
 
                 if msg.messageType == 'NOTICE':
                     handleNoticeMessage(msg)
+
+        while not bot.msgQ.empty():
+            #Handle all messages in queue
+            qMsg = None
+            try:
+                qMsg = bot.msgQ.get_nowait()
+            except:
+                #I guess it actually was empty
+                pass
+
+            if qMsg and "type" in qMsg:
+                
+                if qMsg["type"] not in NOTIF_TYPES:
+                    print("Received unknown notification type: "+str(notifType))
+                else:
+                    #Modules have to subscribe to notifications by type using bot.subToNotification
+                    for listener in bot.notifyList[qMsg["type"]]:
+                        listener(qMsg["data"])
 
 
         for feature in bot.getFeatures():

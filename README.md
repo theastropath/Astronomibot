@@ -40,18 +40,18 @@ Access Token:
 ---------------
 Navigate to:
 
-    https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=<Application Client ID>&redirect_uri=http://localhost&scope=channel_editor channel_read user:edit:broadcast
+    https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=<Application Client ID>&redirect_uri=http://localhost&scope=channel_editor channel_read user:edit:broadcast bits:read channel:read:redemption channel_subscriptions
 
 Log in as the channel owner, and you'll be sent to an localhost address that will look like this, containing your access token:
 
-    http://localhost/#access_token=<Access Token>&scope=channel_editor channel_read user:edit:broadcast
+    http://localhost/#access_token=<Access Token>&scope=channel_editor channel_read user:edit:broadcast bits:read channel:read:redemption channel_subscriptions
 
 Grab the access token from the URL and enter it as the fifth line in your creds file.
 
 
 Alternately, use the token generator available at https://twitchapps.com/tokengen making sure to request the following scopes: 
 
-    channel_editor channel_read user:edit:broadcast
+    channel_editor channel_read user:edit:broadcast bits:read channel:read:redemption channel_subscriptions
 
 # Credentials for other Modules:
 
@@ -102,3 +102,4 @@ Next, create a file called 'gamevotecreds.txt' with 10 lines
  * tweepy
  * requests
  * urlextract
+ * websocket-client

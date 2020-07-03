@@ -7,7 +7,7 @@ from limitlessled.group.commands.v6 import CommandV6
 
 import webcolors
 from astrolib.command import Command
-from astrolib import BROADCASTER
+from astrolib import BROADCASTER,NOTIF_CHANNELPOINTS
 from time import sleep
 
 class MiLight(Command):
@@ -25,6 +25,8 @@ class MiLight(Command):
         self.brightness=1.0
         self.lastColour=(255,255,255)
 
+        self.bot.subToNotification(NOTIF_CHANNELPOINTS,self.channelPointHandler)
+
         if not self.bot.isCmdRegistered("!light"):
             self.bot.regCmd("!light",self)
         else:
@@ -35,15 +37,15 @@ class MiLight(Command):
         else:
             print("!lightgroup is already registered to ",self.bot.getCmdOwner("!lightgroup"))
 
-        if not self.bot.isCmdRegistered("!disco"):
-            self.bot.regCmd("!disco",self)
-        else:
-            print("!disco is already registered to ",self.bot.getCmdOwner("!disco"))
+        #if not self.bot.isCmdRegistered("!disco"):
+        #    self.bot.regCmd("!disco",self)
+        #else:
+        #    print("!disco is already registered to ",self.bot.getCmdOwner("!disco"))
 
-        if not self.bot.isCmdRegistered("!swirl"):
-            self.bot.regCmd("!swirl",self)
-        else:
-            print("!swirl is already registered to ",self.bot.getCmdOwner("!swirl"))
+        #if not self.bot.isCmdRegistered("!swirl"):
+        #    self.bot.regCmd("!swirl",self)
+        #else:
+        #    print("!swirl is already registered to ",self.bot.getCmdOwner("!swirl"))
 
         if self.lightgroup!=0 and len(self.lightcontrollerip)>0:
             self.bridge = Bridge('192.168.1.39')
@@ -53,6 +55,32 @@ class MiLight(Command):
             
             self.enabled = True
 
+    def channelPointHandler(self,data):
+        #print("Got: "+str(data))
+        if data["reward"]=="White Lights":
+            #print("Setting lights to white")
+            self.groups[self.lightgroup-1].on = True
+            self.groups[self.lightgroup-1].transition(brightness=1,temperature=0,duration=0)
+            sleep(0.1)
+            self.groups[self.lightgroup-1].transition(brightness=1,temperature=0,duration=0)
+            self.lastColour=(255,255,255)
+            self.lastState = "R255 G255 B255"
+            
+        elif data["reward"]=="Disco Lights":
+            #print("Setting lights to disco mode")
+            self.groups[self.lightgroup-1].on = True
+            self.setPartyMode(5)
+            sleep(0.1)
+            self.setPartyMode(5)
+            self.lastState="Disco Mode"
+        elif data["reward"]=="Colour Swirl":
+            #print("Setting lights to colour swirl")
+            self.groups[self.lightgroup-1].on = True
+            self.setPartyMode(2)
+            sleep(0.1)
+            self.setPartyMode(2)
+            self.lastState="Rainbow Swirl Mode"
+        
     def getState(self):
         tables = []
 
@@ -68,8 +96,8 @@ class MiLight(Command):
         cmds.append(("!light <r> <g> <b>","Specify an exact colour with RGB values for the light.  Values are between 0 and 255","!light 255 0 128"))
         cmds.append(("!light <Colour name>","Set a light colour by name.  Accepts HTML colour names.","!light olivegreen"))
         cmds.append(("!brightness","Sets the light brightness, in percent","!brightness 75"))
-        cmds.append(("!disco","Makes the light flash between various colours","!disco"))
-        cmds.append(("!swirl","Makes the light gently swirl between all the colours","!swirl"))
+        #cmds.append(("!disco","Makes the light flash between various colours","!disco"))
+        #cmds.append(("!swirl","Makes the light gently swirl between all the colours","!swirl"))
 
 
         tables.append(state)
@@ -140,9 +168,9 @@ class MiLight(Command):
                 except:
                     return False
             if splitMsg[0]=='!disco':
-                return True
+                return False
             if splitMsg[0]=='!swirl':
-                return True
+                return False
             if splitMsg[0]=='!lightgroup' and userLevel == BROADCASTER:
                 return True
             if splitMsg[0]=='!brightness' and len(splitMsg)==2:
@@ -195,9 +223,20 @@ class MiLight(Command):
                     blue=0
                 elif blue>255:
                     blue=255
+                    
+            fullWhite = False
+
+            if red==255 and green==255 and blue==255:
+                fullWhite = True
 
             #self.cont.send(self.light.color(milight.color_from_rgb(red,green,blue),self.lightgroup))
-            if red or green or blue:
+            if fullWhite:
+                self.groups[self.lightgroup-1].on = True
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,temperature=0)
+                sleep(0.1)
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,temperature=0)
+                
+            elif red or green or blue:
                 self.groups[self.lightgroup-1].on = True
                 self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,color=Color(red,green,blue))
                 sleep(0.1)
