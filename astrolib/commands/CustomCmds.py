@@ -283,7 +283,7 @@ class CustomCmds(Command):
                 if command == "!addcom" or command == "!editcom" or command == "!delcom" or command == "!resetcount":
                     if userLevel>=self.modComLevel:
                         return True
-                elif command == "!assoc" or "!unassoc":
+                elif command == "!assoc" or command == "!unassoc":
                     if userLevel == BROADCASTER:
                         return True
                 elif command == "!list":

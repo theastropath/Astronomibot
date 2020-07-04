@@ -281,18 +281,18 @@ class SpamProtection(Command):
             if fullmsg[0]=="!permit" and len(fullmsg)>1:
                 response = fullmsg[1]+" may post one link for up to "+str(self.permitPeriod)+" minutes"
                 self.permitList[fullmsg[1]]=time.time()
-                self.bot.addLogMessage("Granted permit to "+msg.sender+" for "+str(self.permitPeriod)+" minutes")
+                self.bot.addLogMessage("Spam Protection: Granted permit to "+msg.sender+" for "+str(self.permitPeriod)+" minutes")
                 #print(str(self.permitList))
             elif fullmsg[0]=="!addsafe" and len(fullmsg)>1:
                 response = "Added "+fullmsg[1]+" to the URL safe list"
                 self.safeList.add(fullmsg[1].lower())
-                self.bot.addLogMessage("Added "+fullmsg[1]+" to URL safe list")
+                self.bot.addLogMessage("Spam Protection: Added "+fullmsg[1]+" to URL safe list")
                 self.saveSafeList()
             elif fullmsg[0]=="!delsafe" and len(fullmsg)>1:
                 response = "Removed "+fullmsg[1]+" from the URL safe list"
                 try:
                     self.safeList.remove(fullmsg[1].lower())
-                    self.bot.addLogMessage("Removed "+fullmsg[1]+" from URL safe list")
+                    self.bot.addLogMessage("Spam Protection: Removed "+fullmsg[1]+" from URL safe list")
                     self.saveSafeList()
 
                 except:
