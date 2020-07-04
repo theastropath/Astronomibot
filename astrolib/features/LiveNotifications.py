@@ -16,7 +16,7 @@ class LiveNotifications(Feature):
     def __init__(self,bot,name):
         super(LiveNotifications,self).__init__(bot,name)
 
-        self.liveCheckFrequency = 120 #In units based on the pollFreq (in astronomibot.py)
+        self.liveCheckFrequency = 30 #In units based on the pollFreq (in astronomibot.py)
         self.liveNotificationCoolOff = 60 * 60 * 2 #Cool off period is 1 hour by default
 
         self.liveCheck = 1

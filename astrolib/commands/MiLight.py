@@ -55,7 +55,7 @@ class MiLight(Command):
             
             self.enabled = True
 
-    def channelPointHandler(self,data):
+    def channelPointHandler(self,data,sock):
         #print("Got: "+str(data))
         if data["reward"]=="White Lights":
             #print("Setting lights to white")
@@ -80,6 +80,8 @@ class MiLight(Command):
             sleep(0.1)
             self.setPartyMode(2)
             self.lastState="Rainbow Swirl Mode"
+
+        return None
         
     def getState(self):
         tables = []

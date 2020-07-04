@@ -1,10 +1,11 @@
 import re
 from astrolib.command import Command
-from astrolib import \
-    EVERYONE, MOD, REGULAR, BROADCASTER, userLevelToStr, \
-    replaceTerm, countTerm, referenceCountTerm
-
+from astrolib import *
+from astrolib.ircmessage import IrcMessage
+import os
 cmdFile = "cmds.txt"
+pointAssocFile = "pointassoc.txt"
+configDir = "config"
 
 referenceCountTermRegEx = re.compile(re.escape(referenceCountTerm) + r'\(([^\(\)]*)\)')
 
@@ -257,7 +258,8 @@ class CustomCmds(Command):
 
         allCmds = []
         for cmd in sorted(self.customCmds.keys()):
-            allCmds.append(self.customCmds[cmd])
+            if not self.hasPointAssociation(cmd):
+                allCmds.append(self.customCmds[cmd])
 
         for cmd in allCmds:
             state.append((cmd.command,cmd.response,userLevelToStr(cmd.userlevel),str(cmd.callcount)))
@@ -280,6 +282,9 @@ class CustomCmds(Command):
                 #Only a few hardcoded commands, then user editable commands
                 if command == "!addcom" or command == "!editcom" or command == "!delcom" or command == "!resetcount":
                     if userLevel>=self.modComLevel:
+                        return True
+                elif command == "!assoc" or "!unassoc":
+                    if userLevel == BROADCASTER:
                         return True
                 elif command == "!list":
                     return True
@@ -313,7 +318,32 @@ class CustomCmds(Command):
             response = self.resetCustomCommandCount(newCmd)
             response = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
             sock.sendall(response.encode('utf-8'))
-
+        elif command == "!assoc":
+            rest = " ".join(msg.msg.split()[1:])
+            association = rest.split("|",1)
+            if (len(association)==2):
+                rewardName = association[0].strip().lstrip()
+                commandName = association[1].strip().lstrip()
+                if commandName[0]=="!":
+                    response = self.associateCommandToPoints(rewardName,commandName)
+                else:
+                    response = "Command name must start with an '!'"
+            else:
+                response = "Did not provide both a reward name and a command name separated by a |"
+                
+            response = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
+            sock.sendall(response.encode('utf-8'))
+                
+        elif command == "!unassoc":
+            rewardName = " ".join(msg.msg.split()[1:]).strip().lstrip()
+            if len(rewardName)!=0:
+                response = self.unassociatePointReward(rewardName)
+            else:
+                response = "No reward name was provided"
+                
+            response = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
+            sock.sendall(response.encode('utf-8'))
+            
         elif command == "!list":
             numCmds = 0
             cmds = []
@@ -345,7 +375,12 @@ class CustomCmds(Command):
 
         else:
             if self.customCmds[command]:
-                response = self.customCmds[command].getResponse(msg)
+                pointAssoc = self.hasPointAssociation(command)
+                if pointAssoc == None:
+                    response = self.customCmds[command].getResponse(msg)
+                else:
+                    response = "Please redeem the channel point reward '"+pointAssoc+"' instead of using this command"
+                    
                 response = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
                 sock.sendall(response.encode('utf-8'))
 
@@ -357,11 +392,83 @@ class CustomCmds(Command):
         self.exportCommands()
 
         return response
+    
+    def savePointAssocList(self):
+        pointAssocFilePath = configDir+os.sep+self.bot.channel[1:]+os.sep+pointAssocFile
+        with open(pointAssocFilePath,mode='w',encoding="utf-8") as f:
+            for assoc in self.pointAssoc.keys():
+                f.write(assoc+"|"+self.pointAssoc[assoc]+"\n")
+
+    
+    def loadPointAssocList(self):
+        pointAssocFilePath = configDir+os.sep+self.bot.channel[1:]+os.sep+pointAssocFile
+        with open(pointAssocFilePath,mode='r',encoding="utf-8") as f:
+            for line in f:
+                if "|" in line:
+                    assoc = line.split("|")
+                    if len(assoc)==2:
+                        rewardName = assoc[0].lstrip().strip()
+                        commandName = assoc[1].lstrip().strip()
+                        self.pointAssoc[rewardName]=commandName
+
+    def hasPointAssociation(self,command):
+        for rewardName,commandName in self.pointAssoc.items():
+            if commandName==command:
+                return rewardName
+        return None
+
+    
+    def associateCommandToPoints(self,rewardName,commandName):
+        response = ""
+        if rewardName not in self.pointAssoc:
+            self.pointAssoc[rewardName]=commandName
+            self.savePointAssocList()
+            response = "Associated reward '"+rewardName+"' to command '"+commandName+"'"
+        else:
+            response = "Reward '"+rewardName+"' is already associated with command '"+self.pointAssoc[rewardName]+"'"
+        return response
+
+    def unassociatePointReward(self,rewardName):
+        response = ""
+        if rewardName in self.pointAssoc:
+            commandName = self.pointAssoc[rewardName]
+            self.pointAssoc.pop(rewardName,None)
+            self.savePointAssocList()
+            response = "Reward '"+rewardName+"' is no longer associated to command '"+commandName+"'"
+        else:
+            response = "Reward '"+rewardName+"' was not associated with any command"
+
+        return response
+    
+    def channelPointHandler(self,data,sock):
+        if data["reward"] in self.pointAssoc:
+            #print("Found "+data["reward"]+" in association list: "+self.pointAssoc[data["reward"]])
+            command = self.pointAssoc[data["reward"]]
+            user = data["username"]
+
+            #Need to generate a fake message...
+            fakeText = ":"+user+"!"+user+"@"+user+".tmi.twitch.tv PRIVMSG "+self.bot.channel+" :"+command
+            fakeMsg = IrcMessage(fakeText)
+            if command in self.customCmds and self.customCmds[command]:
+                baseResponse = self.customCmds[command].getResponse(fakeMsg)
+                response = "PRIVMSG "+self.bot.channel+" :"+baseResponse+"\n"
+                sock.sendall(response.encode('utf-8'))
+                return baseResponse
+            else:
+                baseResponse = "Command '"+command+"' does not exist..."
+                response = "PRIVMSG "+self.bot.channel+" :"+baseResponse+"\n"
+                sock.sendall(response.encode('utf-8'))
+                return baseResponse
 
     def __init__(self,bot,name):
         super(CustomCmds,self).__init__(bot,name)
         self.modComLevel = REGULAR
         self.customCmds = {} #Dictionary of all custom commands implemented on this bot
+
+        self.bot.subToNotification(NOTIF_CHANNELPOINTS,self.channelPointHandler)
+        self.pointAssoc={}
+        self.loadPointAssocList()
+        
         if not self.bot.isCmdRegistered("!addcom"):
             self.bot.regCmd("!addcom",self)
         else:
@@ -386,5 +493,15 @@ class CustomCmds(Command):
             self.bot.regCmd("!resetcount",self)
         else:
             print("!resetcount is already registered to ",self.bot.getCmdOwner("!resetcount"))
+            
+        if not self.bot.isCmdRegistered("!assoc"):
+            self.bot.regCmd("!assoc",self)
+        else:
+            print("!assoc is already registered to ",self.bot.getCmdOwner("!assoc"))
+
+        if not self.bot.isCmdRegistered("!unassoc"):
+            self.bot.regCmd("!unassoc",self)
+        else:
+            print("!unassoc is already registered to ",self.bot.getCmdOwner("!unassoc"))
 
         self.importCommands()
