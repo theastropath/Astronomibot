@@ -651,6 +651,7 @@ if __name__ == "__main__":
                             sock = connectToServer()
 
         for feature in bot.getFeatures():
+            starttime = time.time()
             try:
                 feature.handleFeature(sock)
             except BrokenPipeError:
@@ -660,6 +661,12 @@ if __name__ == "__main__":
                 print ("Encountered exception '"+str(e.__class__.__name__)+"' while handling feature "+str(feature.name))
                 traceback.print_exc()
                 sock = connectToServer()
+            totalTime=time.time()-starttime
+            #Profiling feature execution time
+            #if totalTime > 1:
+            #    curTime = datetime.now()
+            #    timestamp = curTime.strftime("%Y-%m-%d %H:%M:%S")
+            #    print(timestamp+" "+str(feature)+" took "+str(totalTime)+" seconds")
 
 
 

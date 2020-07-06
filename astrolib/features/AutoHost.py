@@ -1,6 +1,6 @@
 import os
 from astrolib.feature import Feature
-
+import time
 configDir = "config"
 
 class AutoHost(Feature):
@@ -85,14 +85,13 @@ class AutoHost(Feature):
         self.hostUpdate = self.hostUpdate - 1
         if self.hostUpdate == 0:
             self.readHostList()
-
+            
             self.hostUpdate = self.hostCheckFrequency
 
             if not self.bot.api.isStreamOnlineHelix(self.bot.channelName):
                 #Stream must be offline for several checks in a row
                 #(To prevent an occasional lookup failure from hosting during a stream)
                 self.offlineTime += 1
-
                 if self.offlineTime <= 3:
                     #print("Stream offline "+str(self.offlineTime))
                     return
@@ -108,6 +107,7 @@ class AutoHost(Feature):
                     if not self.bot.api.isStreamOnlineHelix(self.hostChannel):
                         #Hosted channel is no longer online, stop hosting
                         self.stopHosting(sock)
+                        
 
                     #Make sure we are still hosting a channel
                     #If not, mark us as not hosting
@@ -120,23 +120,27 @@ class AutoHost(Feature):
                         else:
                             self.hostTime += 1
 
-
                 #Check for channels in host list that are online
                 if not self.hosting or checkForNewHost:
-                    for channel in self.hostList:
-                        #hostChannelId = self.bot.api.getChannelIdFromName(channel)
-                        if self.bot.api.isStreamOnlineHelix(channel):
-                            if not checkForNewHost: #IN the normal case, just host the highest priority stream
-                                self.startHosting(channel,sock)
-                                return
-                            else: #If we're past the host time, we'll check to see if there is a different stream to host
-                                if channel != self.hostChannel:
-                                    print ("We were hosting "+self.hostChannel+" now hosting "+channel)
+                    onlineList = self.bot.api.areStreamsOnlineHelix(self.hostList)
+
+                    if len(onlineList)>0:
+                        #print(str(onlineList))
+                        for channel in self.hostList:
+                            #hostChannelId = self.bot.api.getChannelIdFromName(channel)
+                            if channel.lower() in onlineList:
+                                if not checkForNewHost: #IN the normal case, just host the highest priority stream
                                     self.startHosting(channel,sock)
                                     return
-                                elif channel == self.hostChannel:
-                                    #We'll stick with the current stream if it is higher priority
-                                    return
+                                else: #If we're past the host time, we'll check to see if there is a different stream to host
+                                    if channel != self.hostChannel:
+                                        print ("We were hosting "+self.hostChannel+" now hosting "+channel)
+                                        self.startHosting(channel,sock)
+
+                                        return
+                                    elif channel == self.hostChannel:
+                                        #We'll stick with the current stream if it is higher priority
+                                        return
 
             else:
                 #print("Stream Online...")

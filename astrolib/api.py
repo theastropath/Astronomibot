@@ -54,17 +54,18 @@ class TwitchApi:
         except:
             return None
         
-    def _helixRequest(self, url, data=None, method='GET'):
+    def _helixRequest(self, url, data=None, method='GET',timeout=5):
         if data is not None:
             data = json.dumps(data).encode('utf-8')
 
-        response = self.session.request(method, url, data=data, headers={
+        response = self.session.request(method, url, data=data, timeout=timeout, headers={
             'Client-ID': self.clientId,
             'Authorization': 'Bearer '+self.accessToken,
             'Content-Type': 'application/json'
         })
         try:
-            return json.loads(response.text)
+            result = json.loads(response.text)
+            return result
         except:
             return None
         
@@ -271,6 +272,19 @@ class TwitchApi:
             print("getStreamFromNameHelix: "+str(e))
 
         return None
+    
+    def getStreamFromNameListHelix(self,namelist):
+        try:
+            url = "https://api.twitch.tv/helix/streams?"
+            for name in namelist:
+                url=url+"user_login="+name+"&"
+            stream = self._helixRequest(url)
+            #print(str(stream))
+            return stream
+        except HTTPError as e:
+            print("getStreamFromNameListHelix: "+str(e))
+
+        return None
 
     def getChannelFromIdHelix(self,broadcaster_id):
         try:
@@ -312,6 +326,17 @@ class TwitchApi:
             if "data" in stream:
                 return len(stream["data"])!=0
         return False
+
+    def areStreamsOnlineHelix(self,namelist):
+        stream = self.getStreamFromNameListHelix(namelist)
+        onlineList = []
+        if stream:
+            if "data" in stream:
+                for stream in stream["data"]:
+                    if "user_name" in stream:
+                        onlineList.append(stream["user_name"].lower())
+                        #print(stream["user_name"])
+        return onlineList
 
     def getStreamLiveTimeHelix(self, username):
         stream = self.getStreamFromNameHelix(username)
