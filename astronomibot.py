@@ -284,6 +284,19 @@ class Bot:
         else:
             self.notifyList[notifType].append(callback)
 
+    def hostCheckTask(self):
+        while True:
+            try:
+                hostedChannel = self.api.getCurrentlyHostedChannel(self.channelId)
+                if (hostedChannel!=self.hostedChannel):
+                    #Do this separately just to ensure that it is a single set for thread safety
+                    self.hostedChannel = hostedChannel
+                    #print("Now hosting: "+str(hostedChannel))
+            except:
+                pass #We don't really need to do anything if the lookup fails
+
+            sleep(30)
+
     def __init__(self, channel, nick, pollFreq, api):
         self.modList = [] #List of all moderators for the channel
         self.commands = OrderedDict()
@@ -299,6 +312,10 @@ class Bot:
         self.pollFreq = pollFreq
         self.name = nick
         self.api = api
+
+        self.hostedChannel = None
+        self.hostCheckThread = threading.Thread(target=self.hostCheckTask)
+        self.hostCheckThread.start()
 
         self.pubSub = TwitchWebSocketApp("wss://pubsub-edge.twitch.tv",self.channelId,self.api.accessToken,self)
         self.pubSubThread = threading.Thread(target=self.pubSubTask)
