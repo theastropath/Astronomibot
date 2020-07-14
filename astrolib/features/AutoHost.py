@@ -88,7 +88,7 @@ class AutoHost(Feature):
             
             self.hostUpdate = self.hostCheckFrequency
 
-            if not self.bot.api.isStreamOnlineHelix(self.bot.channelName):
+            if not self.bot.streamOnline:
                 #Stream must be offline for several checks in a row
                 #(To prevent an occasional lookup failure from hosting during a stream)
                 self.offlineTime += 1

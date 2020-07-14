@@ -16,7 +16,7 @@ class LiveNotifications(Feature):
     def __init__(self,bot,name):
         super(LiveNotifications,self).__init__(bot,name)
 
-        self.liveCheckFrequency = 30 #In units based on the pollFreq (in astronomibot.py)
+        self.liveCheckFrequency = 10 #In units based on the pollFreq (in astronomibot.py)
         self.liveNotificationCoolOff = 60 * 60 * 2 #Cool off period is 1 hour by default
 
         self.liveCheck = 1
@@ -124,12 +124,11 @@ class LiveNotifications(Feature):
 
             self.liveCheck = self.liveCheckFrequency
 
-            online =  self.bot.api.isStreamOnlineHelix(self.bot.channelName)
-            if (online and not self.live):
+            if (self.bot.streamOnline and not self.live):
                 self.bot.addLogMessage("Stream has gone live")
                 self.live = True
                 self.sendNotifications()
                 self.liveCheck = self.liveNotificationCoolOff
-            elif (not online and self.live):
+            elif (not self.bot.streamOnline and self.live):
                 self.bot.addLogMessage("Stream has gone offline")
                 self.live = False

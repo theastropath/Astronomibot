@@ -119,11 +119,11 @@ class TwitchWebSocketApp(websocket.WebSocketApp):
             if "message" in jsonMsg["sub_message"]:
                 usermsg = jsonMsg["sub_message"]["message"]
         cumMonths = 0
-        if "cumulative-months" in jsonMsg:
-            cumMonths = jsonMsg["cumulative-months"]
+        if "cumulative_months" in jsonMsg:
+            cumMonths = jsonMsg["cumulative_months"]
         streakMonths = 0
-        if "streak-months" in jsonMsg:
-            streakMonths = jsonMsg["streak-months"]
+        if "streak_months" in jsonMsg:
+            streakMonths = jsonMsg["streak_months"]
         context = ""
         if "context" in jsonMsg:
             context = jsonMsg["context"]
@@ -284,7 +284,7 @@ class Bot:
         else:
             self.notifyList[notifType].append(callback)
 
-    def hostCheckTask(self):
+    def cachingTask(self):
         while True:
             try:
                 hostedChannel = self.api.getCurrentlyHostedChannel(self.channelId)
@@ -293,7 +293,24 @@ class Bot:
                     self.hostedChannel = hostedChannel
                     #print("Now hosting: "+str(hostedChannel))
             except:
+                print("Couldn't get hosted channel")
                 pass #We don't really need to do anything if the lookup fails
+
+            try:
+                online = self.api.isStreamOnlineHelix(self.channelName)
+                if online!=self.streamOnline:
+                    self.streamOnline=online
+            except:
+                print("Couldn't get stream status")
+                pass #A subsequent read will update us
+
+            try:
+                allchatters = self.api.getAllChatters(self.channel[1:])
+                if allchatters is not None and allchatters:
+                    self.chatters = allchatters
+            except:
+                print("Couldn't get chatter list")
+                pass
 
             sleep(30)
 
@@ -314,8 +331,9 @@ class Bot:
         self.api = api
 
         self.hostedChannel = None
-        self.hostCheckThread = threading.Thread(target=self.hostCheckTask)
-        self.hostCheckThread.start()
+        self.streamOnline = False
+        self.cachingThread = threading.Thread(target=self.cachingTask)
+        self.cachingThread.start()
 
         self.pubSub = TwitchWebSocketApp("wss://pubsub-edge.twitch.tv",self.channelId,self.api.accessToken,self)
         self.pubSubThread = threading.Thread(target=self.pubSubTask)
@@ -680,10 +698,10 @@ if __name__ == "__main__":
                 sock = connectToServer()
             totalTime=time.time()-starttime
             #Profiling feature execution time
-            #if totalTime > 1:
-            #    curTime = datetime.now()
-            #    timestamp = curTime.strftime("%Y-%m-%d %H:%M:%S")
-            #    print(timestamp+" "+str(feature)+" took "+str(totalTime)+" seconds")
+            if totalTime > 1.5:
+                curTime = datetime.now()
+                timestamp = curTime.strftime("%Y-%m-%d %H:%M:%S")
+                print(timestamp+" "+str(feature)+" took "+str(totalTime)+" seconds")
 
 
 

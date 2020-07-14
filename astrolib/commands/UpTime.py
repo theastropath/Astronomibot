@@ -44,7 +44,7 @@ class UpTime(Command):
         tables = []
 
         live = "No"
-        if self.bot.api.isStreamOnlineHelix(self.bot.channelName):
+        if self.bot.streamOnline:
             live = "Yes"
 
         state=[]
@@ -73,7 +73,7 @@ class UpTime(Command):
     def respond(self,msg,sock):
         response = ""
 
-        if not self.bot.api.isStreamOnlineHelix(self.bot.channelName):
+        if not self.bot.streamOnline:
             response = "Stream is not live"
         else:
             response = "Stream has been live for %s" % self.getStreamLiveTime()

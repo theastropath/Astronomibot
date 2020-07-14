@@ -178,24 +178,15 @@ body {{ background: #{background} }}
         if os.path.exists(self.outputLocation+os.sep+self.bot.channel[1:]):
             #ftp = None
             try:
-                #ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass,timeout=30)
-                #ftp.set_pasv(True)
-                #print("FTP Connection Opened at "+datetime.now().ctime())
-                #print(self.ftp.pwd())
-                #print(str(ftp.nlst()))
                 for file in os.listdir(self.outputLocation+os.sep+self.bot.channel[1:]):
-                    #print("Uploading "+file)
                     filepath = self.outputLocation+os.sep+self.bot.channel[1:]+os.sep+file
                     with open(filepath,'rb') as f:
                         self.ftp.storbinary("STOR "+file+".tmp",f)
-                    #print(file+" uploaded")
-                    #sleep(1)
-                    #ftp.rename(file+".tmp",file)
-                    #print("Renamed "+file)
                 for file in self.ftp.nlst():
                     if ".tmp" in file:
                         self.ftp.rename(file,file[:-4])
-
+            except socket.timeout as e:
+                pass #I don't really care about a timeout, just reconnect plz
             except ftplib.all_errors as e:
                 print("Encountered an error "+str(type(e))+" trying to deal with the FTP connection at "+datetime.now().ctime()+": "+str(e))
                 print_exc()                
@@ -213,6 +204,40 @@ body {{ background: #{background} }}
             if self.startUpload:                   
                 self.ftpUpload()
                 self.startUpload = False
+
+    def websiteGenerationTask(self):
+        indexMods = []
+        indexTable = [("Module Name","Description")]
+        for cmd in self.bot.getCommands():
+            state = cmd.getState()
+            if state != None:
+                indexMods.append(cmd)
+                self.generateTablePage(state,cmd.name,cmd.getDescription(True))
+
+        for ftr in self.bot.getFeatures():
+            state = ftr.getState()
+            if state != None:
+                indexMods.append(ftr)
+                self.generateTablePage(state,ftr.name,ftr.getDescription(True))
+
+        for mod in indexMods:
+            indexTable.append((self.htmlLink(mod.name,mod.name+".html"),mod.getDescription()))
+
+        self.generateTablePage([[("User","User Level")]+self.bot.getChatters()],"Chatters","All users currently in the chat channel","chatters")
+        indexTable.append((self.htmlLink("Chatters","chatters.html"),"A list of all users in chat"))
+
+        self.generateTablePage([indexTable],"Astronomibot","","index")
+
+        if self.ftpUrl!="":
+            #This should probably be more threadsafe, but it's probably fine considering the low risk
+            self.startUpload=True
+            if not self.uploadThread.is_alive():
+                self.uploadThread = threading.Thread(target=self.uploadTask)
+                self.uploadThread.start()                    
+            #uploadThread = threading.Thread(target=self.ftpUpload)
+            #uploadThread.start()
+            #print("Number of living threads after: "+str(threading.active_count()))
+        
             
     def __init__(self,bot,name):
         super(WebsiteOutput,self).__init__(bot,name)
@@ -237,41 +262,14 @@ body {{ background: #{background} }}
         self.uploadThread = threading.Thread(target=self.uploadTask)
         self.uploadThread.start()
 
+        self.websiteGenThread = None
+
 
 
     def handleFeature(self,sock):
         self.htmlUpdate = self.htmlUpdate - 1
         if self.htmlUpdate == 0:
             self.htmlUpdate = self.htmlUpdateFreq
-
-            indexMods = []
-            indexTable = [("Module Name","Description")]
-            for cmd in self.bot.getCommands():
-                state = cmd.getState()
-                if state != None:
-                    indexMods.append(cmd)
-                    self.generateTablePage(state,cmd.name,cmd.getDescription(True))
-
-            for ftr in self.bot.getFeatures():
-                state = ftr.getState()
-                if state != None:
-                    indexMods.append(ftr)
-                    self.generateTablePage(state,ftr.name,ftr.getDescription(True))
-
-            for mod in indexMods:
-                indexTable.append((self.htmlLink(mod.name,mod.name+".html"),mod.getDescription()))
-
-            self.generateTablePage([[("User","User Level")]+self.bot.getChatters()],"Chatters","All users currently in the chat channel","chatters")
-            indexTable.append((self.htmlLink("Chatters","chatters.html"),"A list of all users in chat"))
-
-            self.generateTablePage([indexTable],"Astronomibot","","index")
-
-            if self.ftpUrl!="":
-                #This should probably be more threadsafe, but it's probably fine considering the low risk
-                self.startUpload=True
-                if not self.uploadThread.is_alive():
-                    self.uploadThread = threading.Thread(target=self.uploadTask)
-                    self.uploadThread.start()                    
-                #uploadThread = threading.Thread(target=self.ftpUpload)
-                #uploadThread.start()
-                #print("Number of living threads after: "+str(threading.active_count()))
+            
+            self.websiteGenThread = threading.Thread(target=self.websiteGenerationTask)
+            self.websiteGenThread.start()                    
