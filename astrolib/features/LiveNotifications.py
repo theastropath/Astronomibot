@@ -98,7 +98,7 @@ class LiveNotifications(Feature):
         notifyMsg = "Now live!\n"+msg+"\n"+url
         content = {"content": notifyMsg}
         content = json.dumps(content).encode('utf-8')
-        discordMsgApi = "https://discordapp.com/api/channels/"+self.discordChannelId+"/messages"
+        discordMsgApi = "https://discord.com/api/channels/"+self.discordChannelId+"/messages"
         session=Session()
         response = session.request('POST', discordMsgApi, data=content,headers={
             'Authorization': 'Bot '+self.discordAccessToken,

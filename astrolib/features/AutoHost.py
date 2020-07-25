@@ -19,11 +19,42 @@ class AutoHost(Feature):
 
         self.hostChannel = ""
         self.hosting =  (self.bot.hostedChannel!=None)
+        self.botUnhost=False
+
+        self.bot.subToNotices(self.handleNotice)
+        self.coolOff = 0
 
         if self.hosting:
             self.hostChannel = self.bot.hostedChannel
 
+    def handleNotice(self,noticeMsg):
+        if noticeMsg.tags:
+            if noticeMsg.tags['msg-id']=='host_off':
+                self.hostTime = 0
+                self.hostChannel=""
+                self.hosting = False
+                if not self.botUnhost:
+                    self.coolOff = 1200 #Apply a cool-off, just in case it was manually unhosted
+                else:
+                    self.botUnhost = False
+                self.bot.addLogMessage("AutoHost: No longer hosting")
+                return True
+            elif noticeMsg.tags['msg-id']=='host_on':
+                hostChannel = msg.msg.split()[-1].strip(".").strip()
+                self.hostTime = 0
+                self.hostChannel=hostChannel
+                self.hosting = True
+                self.bot.addLogMessage("AutoHost: Now hosting "+hostChannel)
+                return True
+            elif noticeMsg.tags['msg-id']=='host_target_went_offline':
+                self.hostTime = 0
+                self.hostChannel=""
+                self.hosting = False
+                self.coolOff = 600 #Apply a cool-off
+                self.bot.addLogMessage("AutoHost: No longer hosting, hosted channel went offline")
+                return True
 
+        return False
 
     def outputHostList(self):
         hostListDir = os.path.join(configDir, self.bot.channel[1:])
@@ -67,20 +98,23 @@ class AutoHost(Feature):
         self.hostTime = 0
         self.hostChannel=hostChannel
         self.hosting = True
-        self.bot.addLogMessage("AutoHost: Now hosting "+hostChannel)
         self.sendMessage("/host "+hostChannel,sock)
 
     def stopHosting(self,sock):
         self.hostTime = 0
         self.hostChannel=""
         self.hosting = False
-        self.bot.addLogMessage("AutoHost: No longer hosting")
+        self.botUnhost=True
         self.sendMessage("/unhost",sock)
 
 
 
     def handleFeature(self,sock):
         checkForNewHost = False
+        if self.coolOff:
+            self.coolOff= self.coolOff - 1
+            return
+        
         #Check to see if we need to look for hosting opportunities
         self.hostUpdate = self.hostUpdate - 1
         if self.hostUpdate == 0:

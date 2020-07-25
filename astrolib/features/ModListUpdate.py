@@ -6,6 +6,17 @@ class ModListUpdate(Feature):
         super(ModListUpdate,self).__init__(bot,name)
         self.modUpdateFreq = 600 #In units based on the pollFreq (In astronomibot.py)
         self.modUpdate = 1
+        self.bot.subToNotices(self.handleNotice)
+
+    def handleNotice(self,noticeMsg):
+        if noticeMsg.tags and noticeMsg.tags['msg-id']=='room_mods':
+            #List of mods can be updated
+            mods = noticeMsg.msg.split(": ")[1]
+            self.bot.modList = []
+            for mod in mods.split(", "):
+                self.bot.modList.append(mod.strip())
+            return True
+        return False
 
     def handleFeature(self,sock):
         #Check to see if mod list needs to be updated

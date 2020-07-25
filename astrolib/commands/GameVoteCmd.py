@@ -158,13 +158,14 @@ class GameVoteCmd(Command):
             
             gamesResp = Session().get(self.gameUrl,headers={'Accept':'application/json'})
             gamesJson = json.loads(gamesResp.text)
-            for game in gamesJson['values']:
-                newGame = [game[0]]
-                if len(game)==columnOffset+1:
-                    newGame.append(game[columnOffset])
-                else:
-                    newGame.append("")
-                gamestatus.append(newGame)
+            if 'values' in gamesJson:
+                for game in gamesJson['values']:
+                    newGame = [game[0]]
+                    if len(game)==columnOffset+1:
+                        newGame.append(game[columnOffset])
+                    else:
+                        newGame.append("")
+                    gamestatus.append(newGame)
         return gamestatus
 
     def getRandoList(self):
@@ -175,13 +176,14 @@ class GameVoteCmd(Command):
 
             randoResp = Session().get(self.randoUrl,headers={'Accept':'application/json'})
             randoJson = json.loads(randoResp.text)
-            for game in randoJson['values']:
-                newGame = [game[0]]
-                if len(game)==columnOffset+1:
-                    newGame.append(game[columnOffset])
-                else:
-                    newGame.append("")
-                randostatus.append(newGame)
+            if 'values' in randoJson:
+                for game in randoJson['values']:
+                    newGame = [game[0]]
+                    if len(game)==columnOffset+1:
+                        newGame.append(game[columnOffset])
+                    else:
+                        newGame.append("")
+                    randostatus.append(newGame)
         return randostatus
 
     def loadVotes(self):

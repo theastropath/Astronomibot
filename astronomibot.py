@@ -284,6 +284,9 @@ class Bot:
         else:
             self.notifyList[notifType].append(callback)
 
+    def subToNotices(self,callback):
+        self.noticeSubs.append(callback)
+
     def cachingTask(self):
         while True:
             try:
@@ -344,6 +347,9 @@ class Bot:
         self.notifyList = {}
         for notifType in NOTIF_TYPES:
             self.notifyList[notifType]=[]
+
+        #Modules need to register themselves to receive NOTICE messages
+        self.noticeSubs = []
 
         self.msgQ = Queue()
         
@@ -485,15 +491,19 @@ class Bot:
 
 ###############################################################################################################
 
-def handleNoticeMessage(msg):
-    if msg.tags and msg.tags['msg-id']=='room_mods':
-        #List of mods can be updated
-        mods = msg.msg.split(": ")[1]
-        bot.modList = []
-        for mod in mods.split(", "):
-            bot.modList.append(mod.strip())
-    else:
-        print (msg.msg)
+def handleNoticeMessage(bot,msg):
+    handled = False
+    for noticeSub in bot.noticeSubs:
+        if noticeSub(msg):
+            handled = True
+    
+    if not handled:
+        if msg.tags and ('msg-id' in msg.tags):
+            print(msg.msg+" (msg-id: "+msg.tags['msg-id']+")")
+        else:
+            print (msg.msg)
+
+        
 
 def logMessage(sender,msg):
     curTime = datetime.now()
@@ -652,7 +662,7 @@ if __name__ == "__main__":
                             logMessage(nick,response)
 
                 if msg.messageType == 'NOTICE':
-                    handleNoticeMessage(msg)
+                    handleNoticeMessage(bot,msg)
 
         while not bot.msgQ.empty():
             #Handle all messages in queue
