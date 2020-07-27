@@ -40,7 +40,7 @@ class AutoHost(Feature):
                 self.bot.addLogMessage("AutoHost: No longer hosting")
                 return True
             elif noticeMsg.tags['msg-id']=='host_on':
-                hostChannel = msg.msg.split()[-1].strip(".").strip()
+                hostChannel = noticeMsg.msg.split()[-1].strip(".").strip().lower()
                 self.hostTime = 0
                 self.hostChannel=hostChannel
                 self.hosting = True
