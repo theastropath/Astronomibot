@@ -5,7 +5,7 @@ class GameVoteFeature(Feature):
         super(GameVoteFeature,self).__init__(bot,name)
         self.gameVoteCmd = self.bot.commands["GameVoteCmd"]
 
-        self.gameVoteFreq = 7200
+        self.gameVoteFreq = 600
         self.gameVoteUpdate = 1
 
 
@@ -13,9 +13,15 @@ class GameVoteFeature(Feature):
         self.gameVoteUpdate = self.gameVoteUpdate - 1
         if self.gameVoteUpdate == 0:
             self.gameVoteUpdate = self.gameVoteFreq
-            gamelist = self.gameVoteCmd.getGameList()
-            randolist = self.gameVoteCmd.getRandoList()
+            #gamelist = self.gameVoteCmd.getGameList()
+            #randolist = self.gameVoteCmd.getRandoList()
+            gamelist = self.gameVoteCmd.gameList
+            randolist = self.gameVoteCmd.randoList
             votesUpdated = False
+
+            if not gamelist or not randolist:
+                #Both lists must be populated before we should bother here
+                return
 
             votesToRemove = []
             for vote in self.gameVoteCmd.gamevotes:

@@ -2,11 +2,19 @@ from astrolib.command import Command
 from requests import Session
 import json
 import os
+from time import sleep
+import threading
 
 configDir="config"
 gamevoteCredFile = "gamevotecreds.txt"
 
 class GameVoteCmd(Command):
+
+    def gameListTask(self):
+        while(True):
+            self.gameList = self.getGameList()
+            self.randoList = self.getRandoList()
+            sleep(300)
 
     def __init__(self,bot,name):
         super(GameVoteCmd,self).__init__(bot,name)
@@ -40,6 +48,11 @@ class GameVoteCmd(Command):
             self.randoUrl = ""
         
         self.voteFile = "votes.txt"
+
+        self.gameList = None
+        self.randoList = None
+        self.gameListThread = threading.Thread(target=self.gameListTask)
+        self.gameListThread.start()
 
         self.gamevotes=[]
         self.randovotes=[]
@@ -225,7 +238,11 @@ class GameVoteCmd(Command):
     def tryGameVote(self,user,vote):
         response = user+": No game matching '"+vote+"' found"
         
-        gameList = self.getGameList()
+        gameList = self.gameList
+
+        if not gameList:
+            response = "Please try again.  Game list has not been loaded yet"
+            return response
 
         for game in gameList:
             if vote.lower() in game[0].lower():
@@ -251,7 +268,12 @@ class GameVoteCmd(Command):
     def tryRandoVote(self,user,vote):
         response = user+": No game matching '"+vote+"' found"
         
-        gameList = self.getRandoList()
+        gameList = self.randoList
+
+        if not gameList:
+            response = "Please try again.  Rando list has not been loaded yet"
+            return response
+
 
         for game in gameList:
             if vote.lower() in game[0].lower():
