@@ -4,6 +4,7 @@ import calendar
 import time
 import tweepy
 import json
+import threading
 
 from requests import Session
 
@@ -127,7 +128,10 @@ class LiveNotifications(Feature):
             if (self.bot.streamOnline and not self.live):
                 self.bot.addLogMessage("Stream has gone live")
                 self.live = True
-                self.sendNotifications()
+
+                self.notifThread = threading.Thread(target=self.sendNotifications)
+                self.notifThread.start()
+
                 self.liveCheck = self.liveNotificationCoolOff
             elif (not self.bot.streamOnline and self.live):
                 self.bot.addLogMessage("Stream has gone offline")
