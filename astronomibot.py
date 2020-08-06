@@ -38,12 +38,9 @@ recvAmount=4096
 
 running = True
 
-
-
 #modList = [] #List of all moderators for the channel
 #commands = []
 #features = []
-
 
 ###############################################################################################################
 
