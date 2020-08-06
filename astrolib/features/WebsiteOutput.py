@@ -8,6 +8,7 @@ from astrolib.feature import Feature
 import threading
 from traceback import print_exc
 from time import sleep
+import socket
 ftpCredFile = "ftpcreds.txt"
 
 # string-like wrapper class that marks a string as html-safe

@@ -25,6 +25,7 @@ url_re = re.compile(url, re.VERBOSE | re.MULTILINE)
 
 configDir = "config"
 safeFile = "safelist.txt"
+blockedWordsFile = "blockedwords.txt"
 
 class SpamOffender:
 
@@ -68,6 +69,7 @@ class SpamProtection(Command):
         self.emoteList = {}
         self.permitList = {}
         self.safeList = set()
+        self.blockedWords = set()
 
         self.extractor = URLExtract()
         stopRight = self.extractor.get_stop_chars_right()
@@ -76,6 +78,8 @@ class SpamProtection(Command):
         stopLeft.add(".")
         self.extractor.set_stop_chars_right(stopRight)
         self.extractor.set_stop_chars_left(stopLeft)
+
+        self.loadBlockedWords()
 
         #Load safe list
         if not os.path.exists(configDir+os.sep+self.bot.channel[1:]):
@@ -103,6 +107,16 @@ class SpamProtection(Command):
             self.bot.regCmd("!delsafe",self)
         else:
             print("!delsafe is already registered to ",self.bot.getCmdOwner("!delsafe"))
+            
+        if not self.bot.isCmdRegistered("!addblockedword"):
+            self.bot.regCmd("!addblockedword",self)
+        else:
+            print("!addblockedword is already registered to ",self.bot.getCmdOwner("!addblockedword"))
+            
+        if not self.bot.isCmdRegistered("!delblockedword"):
+            self.bot.regCmd("!delblockedword",self)
+        else:
+            print("!delblockedword is already registered to ",self.bot.getCmdOwner("!delblockedword"))
 
     def getParams(self):
         params = []
@@ -132,6 +146,8 @@ class SpamProtection(Command):
         commands.append(("!permit [user]","Grants permission to a user to post one link for up to "+str(self.permitPeriod)+" minutes.  (Mod Only)","!permit "+self.bot.name))
         commands.append(("!addsafe [url]","Adds a URL to the safe list, meaning anyone can post that link without a permit.  (Mod Only)","!addsafe google.com"))
         commands.append(("!delsafe [url]","Removes a URL from the safe list, meaning it can no longer be posted without a permit.  (Mod Only)","!delsafe google.com"))
+        commands.append(("!addblockedword [word]","Adds a word to the blocklist, which results in an immediate timeout.  (Mod Only)","!addblockedword butt"))
+        commands.append(("!delblockedword [word]","Removes a word from the blocklist.  (Mod Only)","!delblockedword butt"))
 
         safelist = [("URL Safe List",)]
         for url in self.safeList:
@@ -165,8 +181,26 @@ class SpamProtection(Command):
         with open(configDir+os.sep+self.bot.channel[1:]+os.sep+safeFile,mode='w',encoding="utf-8") as f:
             for safeUrl in self.safeList:
                 f.write(safeUrl.lower()+"\r\n")
-        
+                
+    def saveBlockedWords(self):
+        with open(configDir+os.sep+self.bot.channel[1:]+os.sep+blockedWordsFile,mode='w',encoding="utf-8") as f:
+            for word in self.blockedWords:
+                f.write(word.lower()+"\r\n")
 
+    def loadBlockedWords(self):
+        try:
+            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+blockedWordsFile,encoding='utf-8') as f:
+                for line in f:
+                    blockword = line.strip()
+                    self.blockedWords.add(blockword)
+        except FileNotFoundError:
+            print ("Blocked Word list file is not present")
+        
+    def blockedWordCheck(self,msg,userLevel):
+        for word in self.blockedWords:
+            if word.lower() in msg.msg:
+                return True
+        return False
 
     def emoteSpamCheck(self,msg,userLevel):
         if msg.tags and 'emotes' in msg.tags and msg.tags["emotes"]!=None:
@@ -215,12 +249,19 @@ class SpamProtection(Command):
                 return True
             elif fullmsg[0]=="!delsafe" and len(fullmsg)>1:
                 return True
+            elif fullmsg[0]=="!addblockedword" and len(fullmsg)>1:
+                return True
+            elif fullmsg[0]=="!delblockedword" and len(fullmsg)>1:
+                return True
 
         if userLevel != EVERYONE:
             return False
 
         if msg.messageType!='PRIVMSG':
             return False
+
+        if self.blockedWordCheck(msg,userLevel):
+            return True
 
         if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
             return True
@@ -239,6 +280,7 @@ class SpamProtection(Command):
         userLevel = self.bot.getUserLevel(msg.sender,msg)
         response = ""
         warnOnly = True
+        noWarning = False
         spam = False
 
         if userLevel == EVERYONE:
@@ -246,13 +288,18 @@ class SpamProtection(Command):
                 response = "Don't spam characters like that, "+msg.sender+"!"
                 spam=True
 
-            if self.emoteSpamCheck(msg,userLevel)>self.maxEmoteSpam:
+            elif self.emoteSpamCheck(msg,userLevel)>self.maxEmoteSpam:
                 response = "Don't spam emotes like that, "+msg.sender+"!"
                 spam=True
                 
-            if self.urlSpamCheck(msg,userLevel):
+            elif self.urlSpamCheck(msg,userLevel):
                 response = "Please don't post links without permission "+msg.sender+"! (You need a !permit)"
                 spam=False
+
+            elif self.blockedWordCheck(msg,userLevel):
+                response = "We don't like those kinds of words around here, "+msg.sender
+                spam = True
+                noWarning = True
 
             if msg.sender in self.offenders:
                 offender = self.offenders[self.offenders.index(msg.sender)]
@@ -265,17 +312,36 @@ class SpamProtection(Command):
                     sock.sendall(toMsg.encode('utf-8'))
                     
                 else:
+                    if noWarning:
+                        offender.timeOut()
+                        timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
+                        self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
+                        response = response + " ("+str(timeoutLength)+" second time out)"
+                        toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
+                        sock.sendall(toMsg.encode('utf-8'))
+                    else:
+                        offender.warn()
+                        response = response + " (Warning)"
+                        toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
+                        sock.sendall(toMsg.encode('utf-8'))
+
+            else:
+                offender = SpamOffender(msg.sender)
+                self.offenders.append(offender)
+                if noWarning:
+                    offender.timeOut()
+                    timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
+                    self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
+                    response = response + " ("+str(timeoutLength)+" second time out)"
+                    toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
+                    sock.sendall(toMsg.encode('utf-8'))
+                else:
                     offender.warn()
                     response = response + " (Warning)"
                     toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
                     sock.sendall(toMsg.encode('utf-8'))
 
-            else:
-                offender = SpamOffender(msg.sender)
-                self.offenders.append(offender)
-                response = response + " (Warning)"
-                toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
-                sock.sendall(toMsg.encode('utf-8'))
+
         elif msg.messageType == 'PRIVMSG' and len(msg.msg)!=0 and userLevel>=MOD:
             fullmsg = msg.msg.split()
             if fullmsg[0]=="!permit" and len(fullmsg)>1:
@@ -297,6 +363,22 @@ class SpamProtection(Command):
 
                 except:
                     response = fullmsg[1]+" was not in the URL safe list"
+            elif fullmsg[0]=="!addblockedword" and len(fullmsg)>1:
+                word = fullmsg[1].lower()
+                if word not in self.blockedWords:
+                    response = "Added '"+word+"' to the blocked word list"
+                    self.blockedWords.add(word)
+                    self.saveBlockedWords()
+                else:
+                    response = "Word '"+word+"' was already in the blocked word list"
+            elif fullmsg[0]=="!delblockedword" and len(fullmsg)>1:
+                word = fullmsg[1].lower()
+                if word not in self.blockedWords:
+                    response = "Word '"+word+"' was not in the blocked word list"
+                else:
+                    response = "Removed '"+word+"' from the blocked word list"
+                    self.blockedWords.remove(word)
+                    self.saveBlockedWords()
                     
             
         sockResponse = "PRIVMSG "+self.bot.channel+" :"+response+"\n"

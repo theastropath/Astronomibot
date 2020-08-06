@@ -263,6 +263,9 @@ class GameVoteCmd(Command):
                     self.saveVotes()
                 else:
                     response = user+": '"+game[0]+"' has already been started and therefore cannot be voted for"
+
+                break
+            
         return response
 
     def tryRandoVote(self,user,vote):
@@ -294,6 +297,9 @@ class GameVoteCmd(Command):
                     self.saveVotes()
                 else:
                     response = user+": '"+game[0]+"' has already been started and therefore cannot be voted for"
+
+                break
+            
         return response
 
 
