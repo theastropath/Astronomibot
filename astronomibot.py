@@ -763,15 +763,15 @@ if __name__ == "__main__":
     sock = connectToServer(config["Chat"]["channel"],
                            config["Chat"]["chatnick"],
                            config["Chat"]["chatpassword"])
-    #api = TwitchApi(clientId, accessToken, clientSecret)
+
     api = TwitchApi(config["TwitchAPI"]["clientid"],
                     config["TwitchAPI"]["accesstoken"],
                     config["TwitchAPI"]["clientsecret"])
     
-    #bot = Bot(channel, nick, pollFreq, api)
     bot = Bot(config,
               pollFreq,
               api)
+    
     nick = config["Chat"]["chatnick"]
     leftover = bytes()
     commandCheck=0
