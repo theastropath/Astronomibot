@@ -30,31 +30,24 @@ class LiveNotifications(Feature):
         self.discord=False
         self.discordApi=None
 
-        try:
-            with open(twitterCredFile) as f:
-                self.twitConsumerkey = f.readline().strip('\n')
-                self.twitConsumersecret = f.readline().strip('\n')
-                self.twitAccesstoken = f.readline().strip('\n')
-                self.twitAccesstokensecret = f.readline().strip('\n')
+        self.twitConsumerkey =       self.bot.config["Twitter"]["consumerkey"]
+        self.twitConsumersecret =    self.bot.config["Twitter"]["consumersecret"] 
+        self.twitAccesstoken =       self.bot.config["Twitter"]["accesstoken"]
+        self.twitAccesstokensecret = self.bot.config["Twitter"]["accesstokensecret"]
 
-                self.tweet=True
-        except FileNotFoundError:
-            pass #No Twitter cred file found.  Just won't try to upload.
+        if self.twitConsumerkey!="":
+            self.tweet = True
 
-        try:
-            with open(discordCredFile) as f:
-                self.discordClientId = f.readline().strip('\n')
-                self.discordClientSecret = f.readline().strip('\n')
-                self.discordUserName = f.readline().strip('\n')
-                self.discordUserId = f.readline().strip('\n')
-                self.discordAccessToken = f.readline().strip('\n')
-                self.discordChannelId = f.readline().strip("\n") 
+        self.discordClientId =     self.bot.config["Discord"]["clientid"]
+        self.discordClientSecret = self.bot.config["Discord"]["clientsecret"]
+        self.discordUserName =     self.bot.config["Discord"]["username"]
+        self.discordUserId =       self.bot.config["Discord"]["userid"]
+        self.discordAccessToken =  self.bot.config["Discord"]["accesstoken"]
+        self.discordChannelId =    self.bot.config["Discord"]["channelid"]
 
-                self.discord = True 
-        except FileNotFoundError:
-            pass #No Twitter cred file found.  Just won't try to upload.
-
-
+        if self.discordClientId !="":
+            self.discord = True
+            
         if self.tweet:
             auth = tweepy.OAuthHandler(self.twitConsumerkey,self.twitConsumersecret)
             auth.set_access_token(self.twitAccesstoken,self.twitAccesstokensecret)

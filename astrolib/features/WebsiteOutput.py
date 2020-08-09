@@ -251,14 +251,11 @@ body {{ background: #{background} }}
         self.ftpDir=""
         self.startUpload = False
         self.refreshFreq=int((bot.pollFreq * self.htmlUpdateFreq)/2)
-        try:
-            with open(ftpCredFile) as f:
-                self.ftpUrl = f.readline().strip('\n')
-                self.ftpUser = f.readline().strip('\n')
-                self.ftpPass = f.readline().strip('\n')
-                self.ftpDir = f.readline().strip('\n')
-        except FileNotFoundError:
-            pass #No FTP cred file found.  Just won't try to upload.
+
+        self.ftpUrl =  self.bot.config["FTP"]["ftpurl"]
+        self.ftpUser = self.bot.config["FTP"]["ftpuser"]
+        self.ftpPass = self.bot.config["FTP"]["ftppassword"]
+        self.ftpDir =  self.bot.config["FTP"]["ftpdir"]
 
         self.uploadThread = threading.Thread(target=self.uploadTask)
         self.uploadThread.start()

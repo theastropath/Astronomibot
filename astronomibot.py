@@ -12,6 +12,7 @@ import websocket
 import json
 import threading
 from queue import Queue
+from configparser import ConfigParser
 
 from astrolib import *
 from astrolib.api import TwitchApi
@@ -20,6 +21,7 @@ from astrolib.ircmessage import IrcMessage
 twitchIrcServer = "irc.twitch.tv"
 twitchIrcPort = 6667
 credFile = "creds.txt"
+credIniFile = "config.ini"
 channel = "#theastropath" #Channel name has to be all lowercase
 logDir = "logs"
 commandsDir = os.path.join("astrolib", "commands")
@@ -314,7 +316,8 @@ class Bot:
 
             sleep(30)
 
-    def __init__(self, channel, nick, pollFreq, api):
+
+    def __init__(self, config, pollFreq, api):
         self.modList = [] #List of all moderators for the channel
         self.commands = OrderedDict()
         self.features = OrderedDict()
@@ -322,13 +325,14 @@ class Bot:
         self.chatters = []
         self.logs = []
         self.logFile = "ActionLog.txt"
-        self.channel = channel
+        self.channel = config["Chat"]["channel"]
         self._channelId = None
-        self.channelName = channel[1:]
+        self.channelName = config["Chat"]["channel"][1:]
         self.regulars = []
         self.pollFreq = pollFreq
-        self.name = nick
+        self.name = config["Chat"]["chatnick"]
         self.api = api
+        self.config = config
 
         self.hostedChannel = None
         self.streamOnline = False
@@ -515,7 +519,7 @@ def logMessage(sender,msg):
     with open(os.path.join(channelLogDir, logFile), 'a', encoding='utf-8') as f:
         f.write(logMsg)
 
-def connectToServer():
+def connectToServer(channel,nick,passw):
     print("Connecting to "+twitchIrcServer+":"+str(twitchIrcPort)+" as "+nick)
 
     sock = socket(AF_INET, SOCK_STREAM)
@@ -557,8 +561,172 @@ def generateNotificationLog(notif):
         logMessage("Twitch",message)
 
 
-if __name__ == "__main__":
+def convertCredentials(credIni,channel):
+    isDefault = True
+    if os.path.isfile(credIni):
+        #Don't need to convert
+        return
 
+    print("Converting credentials to INI file")
+    print("Loading basic creds")
+    try:
+        with open(credFile) as f:
+            nick = f.readline().strip('\n')
+            passw = f.readline().strip('\n')
+            clientId = f.readline().strip('\n')
+            clientSecret = f.readline().strip('\n')
+            accessToken = f.readline().strip('\n')
+            isDefault = False
+    except FileNotFoundError:
+        print(credFile+" is missing!")
+        nick = None
+        passw = None
+        clientId = None
+        clientSecret = None
+        accessToken = None
+
+    print("Basic Creds Loaded, trying twitter creds")
+    
+    try:
+        with open("twittercreds.txt") as f:
+            twitConsumerkey = f.readline().strip('\n')
+            twitConsumersecret = f.readline().strip('\n')
+            twitAccesstoken = f.readline().strip('\n')
+            twitAccesstokensecret = f.readline().strip('\n')
+            isDefault = False
+
+    except FileNotFoundError:
+        print("Couldn't find twitter creds")
+        twitConsumerkey = None
+        twitConsumersecret = None
+        twitAccesstoken = None
+        twitAccesstokensecret = None
+        
+    print("Finished with twitter creds, trying Discord creds")
+
+    try:
+        with open("discordcreds.txt") as f:
+            discordClientId = f.readline().strip('\n')
+            discordClientSecret = f.readline().strip('\n')
+            discordUserName = f.readline().strip('\n')
+            discordUserId = f.readline().strip('\n')
+            discordAccessToken = f.readline().strip('\n')
+            discordChannelId = f.readline().strip("\n")
+            isDefault = False
+
+    except FileNotFoundError:
+        print("Couldn't find discord creds")
+        discordClientId = None
+        discordClientSecret = None
+        discordUserName = None
+        discordUserId = None
+        discordAccessToken = None
+        discordChannelId = None
+
+    print("Finished with discord creds, trying ftp creds")
+
+    try:
+        with open("ftpcreds.txt") as f:
+            ftpUrl = f.readline().strip('\n')
+            ftpUser = f.readline().strip('\n')
+            ftpPass = f.readline().strip('\n')
+            ftpDir = f.readline().strip('\n')
+            isDefault = False
+
+    except FileNotFoundError:
+        print("Couldn't find ftp creds")
+        ftpUrl = None
+        ftpUser = None
+        ftpPass = None
+        ftpDir = None
+
+    print("Finished with FTP creds, trying gamevote creds")
+
+    try:
+        with open("gamevotecreds.txt") as f:
+            gvapiKey = f.readline().strip("\n")
+            gvsheetId = f.readline().strip("\n")
+            gvgameSheetName = f.readline().strip("\n")
+            gvgameColumn = f.readline().strip("\n")
+            gvstatusColumn = f.readline().strip("\n")
+            gvfirstGameRow = int(f.readline().strip("\n"))
+            gvrandoSheetName = f.readline().strip("\n")
+            gvrandoGameColumn = f.readline().strip("\n")
+            gvrandoStatusColumn = f.readline().strip("\n")
+            gvfirstRandoRow = int(f.readline().strip("\n"))
+            isDefault = False
+
+    except:
+        print("Couldn't read gamevote creds")
+        gvapiKey = None
+        gvsheetId = None
+        gvgameSheetName = None
+        gvgameColumn = None
+        gvstatusColumn = None
+        gvfirstGameRow = None
+        gvrandoSheetName = None
+        gvrandoGameColumn = None
+        gvrandoStatusColumn = None
+        gvfirstRandoRow = None
+
+    print("All creds read")
+
+    config = ConfigParser()
+
+    config["Chat"] = {"ChatNick":nick,
+                      "ChatPassword":passw,
+                      "Channel":channel}
+    
+    config["TwitchAPI"] = {"ClientId":clientId,
+                           "clientSecret":clientSecret,
+                           "AccessToken":accessToken}
+    
+    config["FTP"] = {"FTPUrl":ftpUrl,
+                     "FTPDir":ftpDir,
+                     "FTPUser":ftpUser,
+                     "FTPPassword":ftpPass}
+    
+    config["Discord"] = {"ClientId":discordClientId,
+                         "ClientSecret":discordClientSecret,
+                         "AccessToken":discordAccessToken,
+                         "UserName":discordUserName,
+                         "UserId":discordUserId,
+                         "ChannelId":discordChannelId}
+
+    config["Twitter"] = {"ConsumerKey":twitConsumerkey,
+                         "ConsumerSecret":twitConsumersecret,
+                         "AccessToken":twitAccesstoken,
+                         "AccessTokenSecret":twitAccesstokensecret}
+
+    config["GameVote"] = {"GoogleDocApiKey":gvapiKey,
+                          "GoogleSheetId":gvsheetId}
+
+    config["GameVoteTableRegular"] = {"Command":"!gamevote",
+                                      "SheetName":gvgameSheetName,
+                                      "GameNameColumn":gvgameColumn,
+                                      "GameStatusColumn":gvstatusColumn,
+                                      "FirstGameRow":gvfirstGameRow}
+
+    config["GameVoteTableRando"] = {"Command":"!randovote",
+                                    "SheetName":gvrandoSheetName,
+                                    "GameNameColumn":gvrandoGameColumn,
+                                    "GameStatusColumn":gvrandoStatusColumn,
+                                    "FirstGameRow":gvfirstRandoRow}
+
+    with open(credIni,mode='w') as f:
+        config.write(f)
+        
+    if isDefault:
+        print("No credential files were read, config file is blank!")
+        
+    print("Config file generated at "+credIni)
+
+
+    
+
+
+if __name__ == "__main__":
+   
     #Use channel name provided (IF one was provided)
     if len(sys.argv)>1:
         channel = sys.argv[1].lower()
@@ -568,21 +736,43 @@ if __name__ == "__main__":
     else:
         print ("Connecting to default channel '"+channel+"'")
 
-    #Read credentials out of cred file
+    configfile = configDir+os.sep+channel[1:]+os.sep+credIniFile
+
+    convertCredentials(configfile,channel)
+
+    config = ConfigParser()
     try:
-        with open(credFile) as f:
-            nick = f.readline().strip('\n')
-            passw = f.readline().strip('\n')
-            clientId = f.readline().strip('\n')
-            clientSecret = f.readline().strip('\n')
-            accessToken = f.readline().strip('\n')
-    except FileNotFoundError:
-        print(credFile+" is missing!  Please create this file in your working directory.  First line should be the username for the bot, second line should be the oauth password for it!")
+        with open(configfile) as f:
+            config.read_file(f)
+    except:
+        print(configfile+" is missing!")
         exit(1)
 
-    sock = connectToServer()
-    api = TwitchApi(clientId, accessToken, clientSecret)
-    bot = Bot(channel, nick, pollFreq, api)
+    #Check to see if config is blank
+    isBlank = True
+    for section in config.sections():
+        for option in config.options(section):
+            if option != "":
+                isBlank = False
+                break
+
+    if isBlank:
+        print("Config file is empty, please fill it in!")
+        exit(1)
+
+    sock = connectToServer(config["Chat"]["channel"],
+                           config["Chat"]["chatnick"],
+                           config["Chat"]["chatpassword"])
+    #api = TwitchApi(clientId, accessToken, clientSecret)
+    api = TwitchApi(config["TwitchAPI"]["clientid"],
+                    config["TwitchAPI"]["accesstoken"],
+                    config["TwitchAPI"]["clientsecret"])
+    
+    #bot = Bot(channel, nick, pollFreq, api)
+    bot = Bot(config,
+              pollFreq,
+              api)
+    nick = config["Chat"]["chatnick"]
     leftover = bytes()
     commandCheck=0
 

@@ -20,22 +20,20 @@ class GameVoteCmd(Command):
         super(GameVoteCmd,self).__init__(bot,name)
 
         self.credsAvailable = False
+        
+        self.apiKey = self.bot.config["GameVote"]["googledocapikey"]
+        self.sheetId = self.bot.config["GameVote"]["googlesheetid"]
+        self.gameSheetName = self.bot.config["GameVoteTableRegular"]["sheetname"]
+        self.gameColumn = self.bot.config["GameVoteTableRegular"]["gamenamecolumn"]
+        self.statusColumn = self.bot.config["GameVoteTableRegular"]["gamestatuscolumn"]
+        self.firstGameRow = int(self.bot.config["GameVoteTableRegular"]["firstgamerow"])
+        self.randoSheetName = self.bot.config["GameVoteTableRando"]["sheetname"]
+        self.randoGameColumn = self.bot.config["GameVoteTableRando"]["gamenamecolumn"]
+        self.randoStatusColumn = self.bot.config["GameVoteTableRando"]["gamestatuscolumn"]
+        self.firstRandoRow = int(self.bot.config["GameVoteTableRando"]["firstgamerow"])
 
-        try:
-            with open(gamevoteCredFile) as f:
-                self.apiKey = f.readline().strip("\n")
-                self.sheetId = f.readline().strip("\n")
-                self.gameSheetName = f.readline().strip("\n")
-                self.gameColumn = f.readline().strip("\n")
-                self.statusColumn = f.readline().strip("\n")
-                self.firstGameRow = int(f.readline().strip("\n"))
-                self.randoSheetName = f.readline().strip("\n")
-                self.randoGameColumn = f.readline().strip("\n")
-                self.randoStatusColumn = f.readline().strip("\n")
-                self.firstRandoRow = int(f.readline().strip("\n"))
-                self.credsAvailable = True
-        except:
-            pass
+        if self.apiKey != "":
+            self.credsAvailable = True
                 
         #Generated values
         if self.credsAvailable:

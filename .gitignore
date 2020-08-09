@@ -1,4 +1,5 @@
 *.txt
+*.ini
 *.pyc
 *.cfg
 *.html
