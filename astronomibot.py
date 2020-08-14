@@ -796,13 +796,19 @@ if __name__ == "__main__":
             pass
         except ConnectionAbortedError:
             print ("Connection got aborted.  Reconnecting")
-            sock = connectToServer()
+            sock = connectToServer(config["Chat"]["channel"],
+                           config["Chat"]["chatnick"],
+                           config["Chat"]["chatpassword"])
         except ConnectionResetError:
             print ("Connection got forced closed.  Reconnecting")
-            sock = connectToServer()
+            sock = connectToServer(config["Chat"]["channel"],
+                                   config["Chat"]["chatnick"],
+                                   config["Chat"]["chatpassword"])
         except Exception as e:
             print ("Encountered exception '"+str(e.__class__.__name__)+"' while reading")
-            sock = connectToServer()
+            sock = connectToServer(config["Chat"]["channel"],
+                                   config["Chat"]["chatnick"],
+                                   config["Chat"]["chatpassword"])
 
 
         if data is not None:
@@ -839,11 +845,15 @@ if __name__ == "__main__":
                             response = command.respond(msg,sock)
                         except BrokenPipeError:
                             print ("Broken pipe while responding to command.  Reconnecting")
-                            sock = connectToServer()
+                            sock = connectToServer(config["Chat"]["channel"],
+                                                   config["Chat"]["chatnick"],
+                                                   config["Chat"]["chatpassword"])
                         except Exception as e:
                             print ("Encountered exception '"+str(e.__class__.__name__)+"' while handling command "+str(command.name)+" handling message '"+str(msg.msg)+"'")
                             traceback.print_exc()
-                            sock = connectToServer()
+                            sock = connectToServer(config["Chat"]["channel"],
+                                                   config["Chat"]["chatnick"],
+                                                   config["Chat"]["chatpassword"])
 
                         if len(response)>0:
                             logMessage(nick,response)
@@ -876,11 +886,15 @@ if __name__ == "__main__":
                                 
                         except BrokenPipeError:
                             print ("Broken pipe while handling notification.  Reconnecting")
-                            sock = connectToServer()
+                            sock = connectToServer(config["Chat"]["channel"],
+                                                   config["Chat"]["chatnick"],
+                                                   config["Chat"]["chatpassword"])
                         except Exception as e:
                             print ("Encountered exception '"+str(e.__class__.__name__)+"' while handling notification ")
                             traceback.print_exc()
-                            sock = connectToServer()
+                            sock = connectToServer(config["Chat"]["channel"],
+                                                   config["Chat"]["chatnick"],
+                                                   config["Chat"]["chatpassword"])
 
         for feature in bot.getFeatures():
             starttime = time.time()
@@ -888,11 +902,15 @@ if __name__ == "__main__":
                 feature.handleFeature(sock)
             except BrokenPipeError:
                 print ("Broken pipe while handling feature.  Reconnecting")
-                sock = connectToServer()
+                sock = connectToServer(config["Chat"]["channel"],
+                                       config["Chat"]["chatnick"],
+                                       config["Chat"]["chatpassword"])
             except Exception as e:
                 print ("Encountered exception '"+str(e.__class__.__name__)+"' while handling feature "+str(feature.name))
                 traceback.print_exc()
-                sock = connectToServer()
+                sock = connectToServer(config["Chat"]["channel"],
+                                       config["Chat"]["chatnick"],
+                                       config["Chat"]["chatpassword"])
             totalTime=time.time()-starttime
             #Profiling feature execution time
             if totalTime > 1.5:
