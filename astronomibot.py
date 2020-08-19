@@ -212,7 +212,8 @@ class TwitchWebSocketApp(websocket.WebSocketApp):
         return message
 
     def on_open(ws):
-        print("Websocket opened")
+        curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
+        print(curTime + " - PubSub Websocket opened")
         msg = ws.generateListenMessage()
         #print("Sending: "+msg)
         ws.send(msg)
@@ -224,11 +225,12 @@ class TwitchWebSocketApp(websocket.WebSocketApp):
         ws.handleMessageByType(jsonMsg)
 
     def on_error(ws,error):
-        print("encountered error")
-        print(error)
+        curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
+        print(curTime + " - PubSub Websocket encountered an error: "+str(error))
 
     def on_close(ws):
-        print("Websocket closed")
+        curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
+        print(curtime + " - PubSub Websocket closed")
 
         
     def __init__(self, url, channelId, authToken, bot, header=None,
@@ -778,6 +780,7 @@ if __name__ == "__main__":
 
     while running:
         data = None
+        timestamp = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
 
         if commandCheck<=0:
             #Get any commands or features
@@ -795,17 +798,17 @@ if __name__ == "__main__":
         except timeout:
             pass
         except ConnectionAbortedError:
-            print ("Connection got aborted.  Reconnecting")
+            print (timestamp+" "+"Connection got aborted.  Reconnecting")
             sock = connectToServer(config["Chat"]["channel"],
                            config["Chat"]["chatnick"],
                            config["Chat"]["chatpassword"])
         except ConnectionResetError:
-            print ("Connection got forced closed.  Reconnecting")
+            print (timestamp+" "+"Connection got forced closed.  Reconnecting")
             sock = connectToServer(config["Chat"]["channel"],
                                    config["Chat"]["chatnick"],
                                    config["Chat"]["chatpassword"])
         except Exception as e:
-            print ("Encountered exception '"+str(e.__class__.__name__)+"' while reading")
+            print (timestamp+" "+"Encountered exception '"+str(e.__class__.__name__)+"' while reading")
             sock = connectToServer(config["Chat"]["channel"],
                                    config["Chat"]["chatnick"],
                                    config["Chat"]["chatpassword"])
@@ -844,12 +847,12 @@ if __name__ == "__main__":
                         try:
                             response = command.respond(msg,sock)
                         except BrokenPipeError:
-                            print ("Broken pipe while responding to command.  Reconnecting")
+                            print (timestamp+" "+"Broken pipe while responding to command.  Reconnecting")
                             sock = connectToServer(config["Chat"]["channel"],
                                                    config["Chat"]["chatnick"],
                                                    config["Chat"]["chatpassword"])
                         except Exception as e:
-                            print ("Encountered exception '"+str(e.__class__.__name__)+"' while handling command "+str(command.name)+" handling message '"+str(msg.msg)+"'")
+                            print (timestamp+" "+"Encountered exception '"+str(e.__class__.__name__)+"' while handling command "+str(command.name)+" handling message '"+str(msg.msg)+"'")
                             traceback.print_exc()
                             sock = connectToServer(config["Chat"]["channel"],
                                                    config["Chat"]["chatnick"],
@@ -873,7 +876,7 @@ if __name__ == "__main__":
             if qMsg and "type" in qMsg:
                 
                 if qMsg["type"] not in NOTIF_TYPES:
-                    print("Received unknown notification type: "+str(notifType))
+                    print(timestamp+" "+"Received unknown notification type: "+str(notifType))
                 else:
                     generateNotificationLog(qMsg)
                     #Modules have to subscribe to notifications by type using bot.subToNotification
@@ -885,12 +888,12 @@ if __name__ == "__main__":
                                 logMessage(nick,response)
                                 
                         except BrokenPipeError:
-                            print ("Broken pipe while handling notification.  Reconnecting")
+                            print (timestamp+" "+"Broken pipe while handling notification.  Reconnecting")
                             sock = connectToServer(config["Chat"]["channel"],
                                                    config["Chat"]["chatnick"],
                                                    config["Chat"]["chatpassword"])
                         except Exception as e:
-                            print ("Encountered exception '"+str(e.__class__.__name__)+"' while handling notification ")
+                            print (timestamp+" "+"Encountered exception '"+str(e.__class__.__name__)+"' while handling notification ")
                             traceback.print_exc()
                             sock = connectToServer(config["Chat"]["channel"],
                                                    config["Chat"]["chatnick"],
@@ -914,8 +917,6 @@ if __name__ == "__main__":
             totalTime=time.time()-starttime
             #Profiling feature execution time
             if totalTime > 1.5:
-                curTime = datetime.now()
-                timestamp = curTime.strftime("%Y-%m-%d %H:%M:%S")
                 print(timestamp+" "+str(feature)+" took "+str(totalTime)+" seconds")
 
 

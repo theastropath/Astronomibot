@@ -165,10 +165,13 @@ body {{ background: #{background} }}
         self.outputFile(page, filename)
 
     def connectFtp(self):
-        self.ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass,timeout=30)
-        self.ftp.set_pasv(True)
-        self.ftp.cwd(self.ftpDir)
-        print("FTP Connection Opened at "+datetime.now().ctime())
+        try:
+            self.ftp = FTP(self.ftpUrl,self.ftpUser,self.ftpPass,timeout=30)
+            self.ftp.set_pasv(True)
+            self.ftp.cwd(self.ftpDir)
+            print("FTP Connection Opened at "+datetime.now().ctime())
+        except Exception as e:
+            print("Couldn't connect to FTP ("+str(type(e))+") at "+datetime.now().ctime())
 
 
     def ftpUpload(self):

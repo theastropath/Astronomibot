@@ -12,8 +12,13 @@ class GameVoteCmd(Command):
 
     def gameListTask(self):
         while(True):
-            self.gameList = self.getGameList()
-            self.randoList = self.getRandoList()
+            gameList = self.getGameList()
+            if gameList:
+                self.gameList = gameList
+
+            randoList = self.getRandoList()
+            if randoList:
+                self.randoList = randoList
             sleep(300)
 
     def __init__(self,bot,name):
@@ -163,12 +168,17 @@ class GameVoteCmd(Command):
 
     def getGameList(self):
         gamestatus=[]
+        gamesJson = {}
 
         if self.credsAvailable:
             columnOffset = ord(self.statusColumn) - ord(self.gameColumn)
+
+            try:
+                gamesResp = Session().get(self.gameUrl,headers={'Accept':'application/json'})
+                gamesJson = json.loads(gamesResp.text)
+            except:
+                return None
             
-            gamesResp = Session().get(self.gameUrl,headers={'Accept':'application/json'})
-            gamesJson = json.loads(gamesResp.text)
             if 'values' in gamesJson:
                 for game in gamesJson['values']:
                     newGame = [game[0]]
@@ -181,12 +191,16 @@ class GameVoteCmd(Command):
 
     def getRandoList(self):
         randostatus=[]
+        randoJson = {}
 
         if self.credsAvailable:
             columnOffset = ord(self.randoStatusColumn) - ord(self.randoGameColumn)
-
-            randoResp = Session().get(self.randoUrl,headers={'Accept':'application/json'})
-            randoJson = json.loads(randoResp.text)
+            try:
+                randoResp = Session().get(self.randoUrl,headers={'Accept':'application/json'})
+                randoJson = json.loads(randoResp.text)
+            except:
+                return None
+            
             if 'values' in randoJson:
                 for game in randoJson['values']:
                     newGame = [game[0]]
