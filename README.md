@@ -106,9 +106,10 @@ Create a Google Sheets document with a list of games.  It must have at least a c
 
 # Dependencies:
 -------------
- * milight
- * webcolors
- * tweepy
+ * milight (for MiLight module)
+ * webcolors (for MiLight module)
+ * tweepy (for LiveNotifications module)
+ * markovify (for Speak module)
  * requests
  * urlextract
  * websocket-client
