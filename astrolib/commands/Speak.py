@@ -36,6 +36,9 @@ class Speak(Command):
         if text.startswith("!"): #Don't learn messages that are commands for the bot
             return False
 
+        if text.startswith("/"): #Don't learn slash-messages (/me, /host, /ban, etc), just in case
+            return False
+
         return True
     
     def learnFromLogs(self,linesToLearn):
