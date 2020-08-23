@@ -4,6 +4,8 @@ import markovify
 from queue import Queue
 import threading
 
+defaultLinesToLoad = 30000
+
 class Speak(Command):
 
     def learningTask(self):
@@ -21,8 +23,13 @@ class Speak(Command):
         
         self.learningThread = threading.Thread(target=self.learningTask)
         self.learningThread.start()
+
+        loadingLines = defaultLinesToLoad
         
-        self.learnFromLogs(25000)
+        if "Speak" in self.bot.config:
+            if "linestolearn" in self.bot.config["Speak"]:
+                loadingLines = int(self.bot.config["Speak"]["linestolearn"])
+        self.learnFromLogs(loadingLines)
         
         if not self.bot.isCmdRegistered("!speak"):
             self.bot.regCmd("!speak",self)
