@@ -43,9 +43,13 @@ class Speak(Command):
         if text.startswith("!"): #Don't learn messages that are commands for the bot
             return False
 
-        if text.startswith("/"): #Don't learn slash-messages (/me, /host, /ban, etc), just in case
+        if text.startswith("\x01ACTION"): #Don't learn action commands
             return False
-
+        
+        for word in text.split(" "): #Don't learn a line if it HAS a slash-message in it anywhere
+            if word.startswith("/") and len(word)>1:
+                return False
+            
         return True
     
     def learnFromLogs(self,linesToLearn):
@@ -73,6 +77,7 @@ class Speak(Command):
                             self.learnedLines+=1
 
                         if self.learnedLines >= linesToLearn:
+                            print("Speak learned back until "+file)
                             break
                     except:
                         print("Something went wrong trying to load lines into the Speak module")
@@ -180,6 +185,10 @@ class Speak(Command):
                 textResponse = "I couldn't think of anything interesting to say..."
         else:
             textResponse = "I don't know how to speak like "+target
+
+        #It shouldn't be possible for it to learn a slash-command, but just in case it does...
+        if textResponse.startswith("/"):
+            textResponse = "How did I learn a slash-command? (Original message: "+textResponse+")"
         
         response = "PRIVMSG "+self.bot.channel+" : "+textResponse+"\n"
         sock.sendall(response.encode('utf-8'))
