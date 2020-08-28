@@ -99,6 +99,8 @@ To add tables that you can vote for games in, you can create as many of the foll
     
 The &lt;keyword> can be anything, and the new command will be !&lt;keyword>vote
 
+To match the older GameVote behaviour, you would need a GameVoteTableGame and GameVoteTableRando section.
+
 
 
 
