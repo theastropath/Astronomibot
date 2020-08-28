@@ -20,6 +20,8 @@ class Speak(Command):
         self.models = dict()
         self.learningQueue = Queue()
         self.learnedLines = 0
+
+        self.allowMeCommands = False
         
         self.learningThread = threading.Thread(target=self.learningTask)
         self.learningThread.start()
@@ -28,7 +30,17 @@ class Speak(Command):
         
         if "Speak" in self.bot.config:
             if "linestolearn" in self.bot.config["Speak"]:
-                loadingLines = int(self.bot.config["Speak"]["linestolearn"])
+                try:
+                    loadingLines = int(self.bot.config["Speak"]["linestolearn"])
+                except:
+                    print("linestolearn must be a number")
+
+            if "allowMeCommands" in self.bot.config["Speak"]:
+                try:
+                    self.allowMeCommands = bool(self.bot.config["Speak"]["allowmecommands"])
+                except:
+                    print("allowmecommands must be a boolean")
+                    
         self.learnFromLogs(loadingLines)
         
         if not self.bot.isCmdRegistered("!speak"):
@@ -43,8 +55,9 @@ class Speak(Command):
         if text.startswith("!"): #Don't learn messages that are commands for the bot
             return False
 
-        if text.startswith("\x01ACTION"): #Don't learn action commands
-            return False
+        if not self.allowMeCommands:
+            if text.startswith("\x01ACTION"): #Don't learn action commands
+                return False
         
         for word in text.split(" "): #Don't learn a line if it HAS a slash-message in it anywhere
             if word.startswith("/") and len(word)>1:
