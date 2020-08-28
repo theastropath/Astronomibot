@@ -37,7 +37,7 @@ class Speak(Command):
             print("!speak is already registered to ",self.bot.getCmdOwner("!speak"))
 
     def isValidToLearn(self,author,text):
-        if author==self.bot.name: #Don't learn messages from the bot
+        if author.lower()==self.bot.name.lower(): #Don't learn messages from the bot
             return False
 
         if text.startswith("!"): #Don't learn messages that are commands for the bot
@@ -171,6 +171,8 @@ class Speak(Command):
 
         if len(splitmsg)>1:
             target = splitmsg[1].lower()
+            if target.startswith("@"):
+                target = target[1:]
         
         if target:
             if target in self.models:
