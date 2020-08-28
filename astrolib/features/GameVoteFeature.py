@@ -13,46 +13,29 @@ class GameVoteFeature(Feature):
         self.gameVoteUpdate = self.gameVoteUpdate - 1
         if self.gameVoteUpdate == 0:
             self.gameVoteUpdate = self.gameVoteFreq
-            #gamelist = self.gameVoteCmd.getGameList()
-            #randolist = self.gameVoteCmd.getRandoList()
-            gamelist = self.gameVoteCmd.gameList
-            randolist = self.gameVoteCmd.randoList
             votesUpdated = False
 
-            if not gamelist or not randolist:
-                #Both lists must be populated before we should bother here
-                return
+            for table in self.gameVoteCmd.voteTables:
+                if not self.gameVoteCmd.voteTables[table].gameList:
+                    #List must be populated before we should bother here
+                    return
 
-            votesToRemove = []
-            for vote in self.gameVoteCmd.gamevotes:
-                found = False
-                for game in gamelist:
-                    if vote[1].lower() == game[0].lower():
-                        if game[1]=="":
-                            found = True
-                if not found:
-                    votesToRemove.append(vote)
-                    votesUpdated = True
+                votesToRemove = []
+                for vote in self.gameVoteCmd.voteTables[table].votes:
+                    found = False
+                    gamelist = self.gameVoteCmd.voteTables[table].gameList
+                    for game in gamelist:
+                        if vote[1].lower() == game[0].lower():
+                            if game[1]=="":
+                                found = True
+                    if not found:
+                        votesToRemove.append(vote)
+                        votesUpdated = True
 
-            for vote in votesToRemove:
-                self.gameVoteCmd.gamevotes.remove(vote)
-                self.gameVoteCmd.clearedgamevotes.append(vote[0])
+                for vote in votesToRemove:
+                    self.gameVoteCmd.voteTables.votes.remove(vote)
+                    self.gameVoteCmd.voteTables.clearedVotes.append(vote[0])
 
-            
-            votesToRemove = []
-            for vote in self.gameVoteCmd.randovotes:
-                found = False
-                for game in randolist:
-                    if vote[1].lower() == game[0].lower():
-                        if game[1]=="":
-                            found = True
-                if not found:
-                    votesToRemove.append(vote)
-                    votesUpdated = True
-
-            for vote in votesToRemove:
-                self.gameVoteCmd.randovotes.remove(vote)
-                self.gameVoteCmd.clearedrandovotes.append(vote[0])
 
             if votesUpdated:
                 self.gameVoteCmd.saveVotes()

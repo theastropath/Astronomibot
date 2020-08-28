@@ -703,14 +703,12 @@ def convertCredentials(credIni,channel):
     config["GameVote"] = {"GoogleDocApiKey":gvapiKey,
                           "GoogleSheetId":gvsheetId}
 
-    config["GameVoteTableRegular"] = {"Command":"!gamevote",
-                                      "SheetName":gvgameSheetName,
+    config["GameVoteTableGame"] =    {"SheetName":gvgameSheetName,
                                       "GameNameColumn":gvgameColumn,
                                       "GameStatusColumn":gvstatusColumn,
                                       "FirstGameRow":gvfirstGameRow}
 
-    config["GameVoteTableRando"] = {"Command":"!randovote",
-                                    "SheetName":gvrandoSheetName,
+    config["GameVoteTableRando"] = {"SheetName":gvrandoSheetName,
                                     "GameNameColumn":gvrandoGameColumn,
                                     "GameStatusColumn":gvrandoStatusColumn,
                                     "FirstGameRow":gvfirstRandoRow}

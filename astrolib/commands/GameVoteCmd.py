@@ -8,17 +8,104 @@ import threading
 configDir="config"
 gamevoteCredFile = "gamevotecreds.txt"
 
+class GameVoteTable():
+    def __init__(self,voteInfo,keyword,sheetName,gameCol,statusCol,firstRow):
+        self.keyword = keyword
+        self.voteInfo = voteInfo
+
+        self.gameUrl = ""
+
+
+        self.sheetName = sheetName
+        self.gameColumn = gameCol
+        self.statusColumn = statusCol
+        self.firstRow = firstRow
+        
+        if self.voteInfo.credsAvailable:
+            self.fullGameRange = self.sheetName+"!"+self.gameColumn+str(self.firstRow)+":"+self.statusColumn+"1000"
+            self.gameUrl = "https://sheets.googleapis.com/v4/spreadsheets/"+self.voteInfo.sheetId+"/values/"+self.fullGameRange+"?key="+self.voteInfo.apiKey
+
+        self.votes=[]
+        self.clearedVotes = []
+
+        self.gameList = None
+        self.updateGameList()
+
+    def updateGameList(self):
+        gamestatus=[]
+        gamesJson = {}
+
+        if self.voteInfo.credsAvailable:
+            columnOffset = ord(self.statusColumn) - ord(self.gameColumn)
+
+            try:
+                gamesResp = Session().get(self.gameUrl,headers={'Accept':'application/json'})
+                gamesJson = json.loads(gamesResp.text)
+            except:
+                return None
+            
+            if 'values' in gamesJson:
+                for game in gamesJson['values']:
+                    newGame = [game[0]]
+                    if len(game)==columnOffset+1:
+                        newGame.append(game[columnOffset])
+                    else:
+                        newGame.append("")
+                    gamestatus.append(newGame)
+
+                self.gameList = gamestatus
+
+        return gamestatus
+    
+    def getCurVote(self,user):
+        response = user+": You have not voted"
+        for voter in self.votes:
+            if voter[0].lower()==user.lower():
+                response = user+": Your current vote is for '"+voter[1]+"'"
+
+        return response
+    
+    def tryVote(self,user,vote):
+        response = user+": No game matching '"+vote+"' found"
+        
+        gameList = self.gameList
+
+        if not gameList:
+            response = "Please try again.  Game list has not been loaded yet"
+            return response
+
+        for game in gameList:
+            if vote.lower() in game[0].lower():
+                if (game[1]==""):
+                    response = user+": Your vote has been registered for '"+game[0]+"'"
+                    found = False
+                    for voter in self.votes:
+                        if voter[0].lower()==user.lower():
+                            found = True
+                    if found:
+                        for voter in self.votes:
+                            if voter[0].lower()==user.lower():
+                                voter[1] = game[0]
+                    else:
+                        newvote = [user.lower(),game[0]]
+                        self.votes.append(newvote)
+
+                    self.voteInfo.saveVotes()
+                else:
+                    response = user+": '"+game[0]+"' has already been started and therefore cannot be voted for"
+
+                break
+            
+        return response
+
+
 class GameVoteCmd(Command):
 
     def gameListTask(self):
         while(True):
-            gameList = self.getGameList()
-            if gameList:
-                self.gameList = gameList
-
-            randoList = self.getRandoList()
-            if randoList:
-                self.randoList = randoList
+            for table in self.voteTables:
+                self.voteTables[table].updateGameList()
+                
             sleep(300)
 
     def __init__(self,bot,name):
@@ -28,51 +115,38 @@ class GameVoteCmd(Command):
         
         self.apiKey = self.bot.config["GameVote"]["googledocapikey"]
         self.sheetId = self.bot.config["GameVote"]["googlesheetid"]
-        self.gameSheetName = self.bot.config["GameVoteTableRegular"]["sheetname"]
-        self.gameColumn = self.bot.config["GameVoteTableRegular"]["gamenamecolumn"]
-        self.statusColumn = self.bot.config["GameVoteTableRegular"]["gamestatuscolumn"]
-        self.firstGameRow = int(self.bot.config["GameVoteTableRegular"]["firstgamerow"])
-        self.randoSheetName = self.bot.config["GameVoteTableRando"]["sheetname"]
-        self.randoGameColumn = self.bot.config["GameVoteTableRando"]["gamenamecolumn"]
-        self.randoStatusColumn = self.bot.config["GameVoteTableRando"]["gamestatuscolumn"]
-        self.firstRandoRow = int(self.bot.config["GameVoteTableRando"]["firstgamerow"])
 
         if self.apiKey != "":
             self.credsAvailable = True
-                
-        #Generated values
-        if self.credsAvailable:
-            self.fullGameRange = self.gameSheetName+"!"+self.gameColumn+str(self.firstGameRow)+":"+self.statusColumn+"1000"
-            self.fullRandoRange = self.randoSheetName+"!"+self.randoGameColumn+str(self.firstRandoRow)+":"+self.randoStatusColumn+"1000"
-            self.gameUrl = "https://sheets.googleapis.com/v4/spreadsheets/"+self.sheetId+"/values/"+self.fullGameRange+"?key="+self.apiKey
-            self.randoUrl = "https://sheets.googleapis.com/v4/spreadsheets/"+self.sheetId+"/values/"+self.fullRandoRange+"?key="+self.apiKey
-        else:
-            self.gameUrl = ""
-            self.randoUrl = ""
+            
+        self.voteTables = dict()
+            
+        for configSection in self.bot.config:
+            if "GameVoteTable" in configSection:
+                keyword = configSection.replace("GameVoteTable","").lower()
+
+                newTable = GameVoteTable(self,
+                                         keyword,
+                                         self.bot.config[configSection]["sheetname"],
+                                         self.bot.config[configSection]["gamenamecolumn"],
+                                         self.bot.config[configSection]["gamestatuscolumn"],
+                                         self.bot.config[configSection]["firstgamerow"])
+
+                self.voteTables[keyword] = newTable
         
         self.voteFile = "votes.txt"
 
-        self.gameList = None
-        self.randoList = None
-        self.gameListThread = threading.Thread(target=self.gameListTask)
-        self.gameListThread.start()
-
-        self.gamevotes=[]
-        self.randovotes=[]
-        self.clearedgamevotes=[]
-        self.clearedrandovotes=[]
-
         self.loadVotes()
-        
-        if not self.bot.isCmdRegistered("!schedulemsg"):
-            self.bot.regCmd("!gamevote",self)
-        else:
-            print("!gamevote is already registered to ",self.bot.getCmdOwner("!gamevote"))
+
+        #Register commands for all configured tables
+        for table in self.voteTables:
+            command = "!"+table+"vote"
             
-        if not self.bot.isCmdRegistered("!randovote"):
-            self.bot.regCmd("!randovote",self)
-        else:
-            print("!randovote is already registered to ",self.bot.getCmdOwner("!randovote"))
+            if not self.bot.isCmdRegistered(command):
+                self.bot.regCmd(command,self)
+            else:
+                print(command+" is already registered to ",self.bot.getCmdOwner("command"))
+            
 
     def getDescription(self,full=False):
         if full and self.credsAvailable:
@@ -87,47 +161,31 @@ class GameVoteCmd(Command):
         randovotes = []
 
         commands.append(("Command Name","Description"))
-        commands.append(("!gamevote","Show your current game vote"))
-        commands.append(("!gamevote [game]","Vote for the first game in the spreadsheet that matches [game]"))
-        commands.append(("!randovote","Show your current randomizer vote"))
-        commands.append(("!randovote [game]","Vote for the first randomizer in the spreadsheet that matches [game]"))
-
-        gamevotes.append(("Game Name","Number of Votes"))
-        gamevotecounts = []
-        for gamevote in self.gamevotes:
-            found = False
-            for count in gamevotecounts:
-                if count[0] == gamevote[1]:
-                    count[1] = count[1]+1
-                    found = True
-            if not found:
-                gamevotecounts.append([gamevote[1],1])
-
-        gamevotecounts = sorted(gamevotecounts,key=lambda x: x[1],reverse=True)
-
-        for count in gamevotecounts:
-            gamevotes.append((count[0],str(count[1])))
-
-
-        randovotes.append(("Randomizer Name","Number of Votes"))
-        randovotecounts = []
-        for randovote in self.randovotes:
-            found = False
-            for count in randovotecounts:
-                if count[0] == randovote[1]:
-                    count[1]+=1
-                    found = True
-            if not found:
-                randovotecounts.append([randovote[1],1])
-
-        randovotecounts = sorted(randovotecounts,key=lambda x: x[1],reverse=True)
-
-        for count in randovotecounts:
-            randovotes.append((count[0],str(count[1])))
-            
+        for table in self.voteTables:
+            commands.append(("!"+table+"vote","Show your current vote"))
+            commands.append(("!"+table+"vote [game]","Vote for the first game in the "+table+" spreadsheet that matches [game]"))
         tables.append(commands)
-        tables.append(gamevotes)
-        tables.append(randovotes)
+
+        for table in self.voteTables:
+            gamevotes = []
+            gamevotes.append((table.capitalize()+" Name","Number of Votes"))
+            gamevotecounts = []
+            for gamevote in self.voteTables[table].votes:
+                found = False
+                for count in gamevotecounts:
+                    if count[0] == gamevote[1]:
+                        count[1] = count[1]+1
+                        found = True
+                if not found:
+                    gamevotecounts.append([gamevote[1],1])
+
+            gamevotecounts = sorted(gamevotecounts,key=lambda x: x[1],reverse=True)
+
+            for count in gamevotecounts:
+                gamevotes.append((count[0],str(count[1])))
+
+            tables.append(gamevotes)
+
         return tables
 
     def getParams(self):
@@ -137,12 +195,24 @@ class GameVoteCmd(Command):
     def setParam(self,param,val):
         pass
 
+    def hasClearedVote(self,user):
+        for table in self.voteTables:
+            if user in self.voteTables[table].clearedVotes:
+                return True
+        return False
+
     def shouldRespond(self,msg,userLevel):
         if msg.messageType == 'PRIVMSG' and len(msg.msg)!=0:
             fullmsg = msg.msg.split()
-            if fullmsg[0].lower()=="!gamevote" or fullmsg[0].lower()=="!randovote":
-                return True
+            command = fullmsg[0].lower()
+            if command.startswith("!") and command.endswith("vote"):
+                keyword = command.replace("!","").replace("vote","")
+                if keyword in self.voteTables:
+                    return True
 
+        if msg.messageType == 'PRIVMSG' and self.hasClearedVote(msg.sender):
+            return True
+        
         if msg.messageType == 'PRIVMSG' and msg.sender in self.clearedgamevotes:
             return True
 
@@ -219,16 +289,21 @@ class GameVoteCmd(Command):
                     voteLine = line.strip().split()
                     if len(voteLine)>=3:
                         newVote = [voteLine[1]," ".join(voteLine[2:])]
-                        if voteLine[0]=="game":
-                            self.gamevotes.append(newVote)
-                        elif voteLine[0]=="rando":
-                            self.randovotes.append(newVote)
+
+                        if voteLine[0] in self.voteTables:
+                            self.voteTables[voteLine[0]].votes.append(newVote)
+                        else:
+                            print("Unknown vote keyword: "+voteline[0])
+                                
                     elif len(voteLine)>=2:
                         newVote = voteLine[1]
-                        if voteLine[0]=="gameclear":
-                            self.clearedgamevotes.append(newVote)
-                        elif voteLine[0]=="randoclear":
-                            self.clearedrandovotes.append(newVote)
+                        
+                        keyword = voteLine[0].replace("clear","")
+                        if keyword in self.voteTables:
+                            self.voteTables[keyword].clearedVotes.append(newVote)
+                        else:
+                            print("Unknown vote clear keyword: "+keyword)
+
                         
                             
         except FileNotFoundError:
@@ -237,14 +312,12 @@ class GameVoteCmd(Command):
     def saveVotes(self):
         voteFile = configDir+os.sep+self.bot.channel[1:]+os.sep+self.voteFile
         with open(voteFile,mode='w',encoding='utf-8') as f:
-            for vote in self.gamevotes:
-                f.write("game "+vote[0]+" "+vote[1]+"\r\n")
-            for vote in self.randovotes:
-                f.write("rando "+vote[0]+" "+vote[1]+"\r\n")
-            for vote in self.clearedgamevotes:
-                f.write("gameclear "+vote+"\r\n")
-            for vote in self.clearedrandovotes:
-                f.write("randoclear "+vote+"\r\n")
+            for table in self.voteTables:
+                for vote in self.voteTables[table].votes:
+                    f.write(self.voteTables[table].keyword+" "+vote[0]+" "+vote[1]+"\r\n")
+                for vote in self.voteTables[table].clearedVotes:
+                    f.write(self.voteTables[table].keyword+"clear "+vote+"\r\n")
+
         
 
     def tryGameVote(self,user,vote):
@@ -318,43 +391,31 @@ class GameVoteCmd(Command):
     def respond(self,msg,sock):
         response = ""
         fullmsg = msg.msg.split()
+        
+        command = fullmsg[0].lower()
+        isCommand = command.startswith("!") and command.endswith("vote")
+        keyword = command.replace("!","").replace("vote","")
+        validCommand = keyword in self.voteTables
 
-        gamevote = True
-
-        if fullmsg[0].lower()=="!gamevote" or fullmsg[0].lower()=="!randovote":
-            if (fullmsg[0].lower()=="!randovote"):
-                gamevote = False
+        if validCommand:
 
             if len(fullmsg)==1:
-                if gamevote:
-                    response = self.getCurGameVote(msg.sender)
-                else:
-                    response = self.getCurRandoVote(msg.sender)
+                response = self.voteTables[keyword].getCurVote(msg.sender)
             else:
                 vote = " ".join(fullmsg[1:])
-                if gamevote:
-                    response = self.tryGameVote(msg.sender,vote)
-                else:
-                    response = self.tryRandoVote(msg.sender,vote)
+                response = self.voteTables[keyword].tryVote(msg.sender,vote)
         else:
             #Remind user that vote has been cleared
             clearedRando = False
             clearedGame = False
 
-            if msg.sender.lower() in self.clearedrandovotes:
-                clearedRando = True
-                self.clearedrandovotes.remove(msg.sender)
-
-            if msg.sender.lower() in self.clearedgamevotes:
-                clearedGame = True
-                self.clearedgamevotes.remove(msg.sender)
-
-            if clearedRando and clearedGame:
-                response = msg.sender+": Your votes have been cleared for both regular games and randomizers.  Please place new votes with !gamevote and !randovote"
-            elif clearedRando:
-                response = msg.sender+": Your randomizer vote has been cleared.  Please place a new vote with !randovote"
-            elif clearedGame:
-                response = msg.sender+": Your game vote has been cleared.  Please place a new vote with !gamevote"
+            clearedVoteCommands = []
+            for table in self.voteTables:
+                if msg.sender.lower() in self.voteTables[table].clearedVotes:
+                    self.voteTables[table].clearedVotes.remove(msg.sender)
+                    clearedVoteCommands.append("!"+table+"vote")
+                    
+            response = msg.sender+": Your votes have been cleared for the following commands: "+(", ".join(clearedVoteCommands))
 
             self.saveVotes()
             
