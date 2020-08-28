@@ -8,7 +8,7 @@ Run astronomibot.py one time, providing your channel name as an argument, eg:
 
     astronomibot.py theastropath
 
-Which will generate a new blank config file at ./config/<channel name>/config.ini
+Which will generate a new blank config file at ./config/&lt;channel name>/config.ini
 
 Open that file and start filling in the fields as follows...
 
