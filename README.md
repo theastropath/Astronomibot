@@ -89,19 +89,17 @@ Create a Google Sheets document with a list of games.  It must have at least a c
    * "googledocapikey" is your Google Sheets API Key
    * "googlesheetid" is the sheet ID of the document you created
 
-## [GameVoteTableRegular] Section (Voting for regular games)
-   * "command" is the name of the command that will be used to vote
+To add tables that you can vote for games in, you can create as many of the following sections (with unique keywords) as you want
+
+## [GameVoteTable&lt;keyword>] Section (Voting for games)
    * "sheetname" is the name of the sheet containing regular games
    * "gamenamecolumn" is the column letter containing the list of game names
    * "gamestatuscolumn" is the column letter containing the status of those games
    * "firstgamerow" is the row number of the first game in the list
+    
+The &lt;keyword> can be anything, and the new command will be !&lt;keyword>vote
 
-## [GameVoteTableRando] Section (Voting for randomizers)
-   * "command" is the name of the command that will be used to vote for randomizers
-   * "sheetname" is the name of the sheet containing the list of randomizer games
-   * "gamenamecolumn" is the column letter containing the list of randomizer game names
-   * "gamestatuscolumn" is the column letter containing the status of those randomizer games
-   * "firstgamerow" is the row number of the first randomizer name in the list
+
 
 
 # Dependencies:
