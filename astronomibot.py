@@ -319,7 +319,7 @@ class Bot:
             sleep(30)
 
 
-    def __init__(self, config, pollFreq, api):
+    def __init__(self, config, configFile, pollFreq, api):
         self.modList = [] #List of all moderators for the channel
         self.commands = OrderedDict()
         self.features = OrderedDict()
@@ -335,6 +335,7 @@ class Bot:
         self.name = config["Chat"]["chatnick"]
         self.api = api
         self.config = config
+        self.configFile = configFile
 
         self.hostedChannel = None
         self.streamOnline = False
@@ -388,6 +389,10 @@ class Bot:
             for log in self.logs:
                 f.write(log[0]+"$$$"+log[1]+"\r\n")
 
+    def saveConfig(self):
+        print("Saving config")
+        with open (self.configFile,'w') as configfile:
+            self.config.write(configfile)
 
 
     def addLogMessage(self,msg):
@@ -428,16 +433,19 @@ class Bot:
 
     def checkCommandsAndFeatures(self):
         commandFiles = []
+        gotNew = False
         for command in os.listdir(commandsDir):
             commandName, ext = os.path.splitext(command)
             if ".py" == ext and commandName not in self.commands:
                 commandFiles.append(commandName)
+                gotNew = True
 
         featureFiles = []
         for feature in os.listdir(featuresDir):
             featureName, ext = os.path.splitext(feature)
             if ".py" == ext and featureName not in self.features:
                 featureFiles.append(featureName)
+                gotNew = True
 
         commandFiles.sort()
         for command in commandFiles:
@@ -463,6 +471,9 @@ class Bot:
             except:
                 traceback.print_exc()
                 print("Couldn't load feature module '"+feature+"'")
+
+        if gotNew:
+            self.saveConfig()
 
 
     def getUserLevel(self,userName, msg):
@@ -769,6 +780,7 @@ if __name__ == "__main__":
                     config["TwitchAPI"]["clientsecret"])
     
     bot = Bot(config,
+              configfile,
               pollFreq,
               api)
     

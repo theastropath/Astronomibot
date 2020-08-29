@@ -469,6 +469,14 @@ class CustomCmds(Command):
         self.pointAssoc={}
         self.loadPointAssocList()
         
+        if "CustomCmds" not in self.bot.config:
+            self.bot.config["CustomCmds"] = {}
+            
+        if "modcommandlevel" in self.bot.config["CustomCmds"]:
+            self.modComLevel = int(self.bot.config["CustomCmds"]["modcommandlevel"])
+        else:
+            self.bot.config["CustomCmds"]["modcommandlevel"] = str(self.modComLevel)
+
         if not self.bot.isCmdRegistered("!addcom"):
             self.bot.regCmd("!addcom",self)
         else:

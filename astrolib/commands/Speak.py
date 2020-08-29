@@ -28,18 +28,24 @@ class Speak(Command):
 
         loadingLines = defaultLinesToLoad
         
-        if "Speak" in self.bot.config:
-            if "linestolearn" in self.bot.config["Speak"]:
-                try:
-                    loadingLines = int(self.bot.config["Speak"]["linestolearn"])
-                except:
-                    print("linestolearn must be a number")
+        if "Speak" not in self.bot.config:
+            self.bot.config["Speak"] = {}
+            
+        if "linestolearn" in self.bot.config["Speak"]:
+            try:
+                loadingLines = int(self.bot.config["Speak"]["linestolearn"])
+            except:
+                print("linestolearn must be a number")
+        else:
+            self.bot.config["Speak"]["linestolearn"] = str(loadingLines)
 
-            if "allowMeCommands" in self.bot.config["Speak"]:
-                try:
-                    self.allowMeCommands = bool(self.bot.config["Speak"]["allowmecommands"])
-                except:
-                    print("allowmecommands must be a boolean")
+        if "allowmecommands" in self.bot.config["Speak"]:
+            try:
+                self.allowMeCommands = bool(self.bot.config["Speak"]["allowmecommands"])
+            except:
+                print("allowmecommands must be a boolean")
+        else:
+            self.bot.config["Speak"]["allowmecommands"] = str(self.allowMeCommands)
                     
         self.learnFromLogs(loadingLines)
         

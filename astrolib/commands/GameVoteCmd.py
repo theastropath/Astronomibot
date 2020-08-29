@@ -213,11 +213,11 @@ class GameVoteCmd(Command):
         if msg.messageType == 'PRIVMSG' and self.hasClearedVote(msg.sender):
             return True
         
-        if msg.messageType == 'PRIVMSG' and msg.sender in self.clearedgamevotes:
-            return True
+        #if msg.messageType == 'PRIVMSG' and msg.sender in self.clearedgamevotes:
+        #    return True
 
-        if msg.messageType == 'PRIVMSG' and msg.sender in self.clearedrandovotes:
-            return True
+        #if msg.messageType == 'PRIVMSG' and msg.sender in self.clearedrandovotes:
+        #    return True
         
         return False
 

@@ -71,6 +71,8 @@ class SpamProtection(Command):
         self.safeList = set()
         self.blockedWords = set()
 
+        self.initConfig()
+
         self.extractor = URLExtract()
         stopRight = self.extractor.get_stop_chars_right()
         stopLeft = self.extractor.get_stop_chars_left()
@@ -118,6 +120,37 @@ class SpamProtection(Command):
         else:
             print("!delblockedword is already registered to ",self.bot.getCmdOwner("!delblockedword"))
 
+    def initConfig(self):
+        if "SpamProtection" not in self.bot.config:
+            self.bot.config["SpamProtection"] = {}
+
+        if "maxasciispam" in self.bot.config["SpamProtection"]:
+            self.maxAsciiSpam = int(self.bot.config["SpamProtection"]["maxasciispam"])
+        else:
+            self.bot.config["SpamProtection"]["maxasciispam"] = str(self.maxAsciiSpam)
+            
+        if "maxemotespam" in self.bot.config["SpamProtection"]:
+            self.maxEmoteSpam = int(self.bot.config["SpamProtection"]["maxemotespam"])
+        else:
+            self.bot.config["SpamProtection"]["maxemotespam"] = str(self.maxEmoteSpam)
+
+        if "timeoutperiod" in self.bot.config["SpamProtection"]:
+            self.timeoutPeriod = int(self.bot.config["SpamProtection"]["timeoutperiod"])
+        else:
+            self.bot.config["SpamProtection"]["timeoutperiod"] = str(self.timeoutPeriod)
+
+        if "warningperiod" in self.bot.config["SpamProtection"]:
+            self.warningPeriod = int(self.bot.config["SpamProtection"]["warningperiod"])
+        else:
+            self.bot.config["SpamProtection"]["warningperiod"] = str(self.warningPeriod)
+            
+        if "permitperiod" in self.bot.config["SpamProtection"]:
+            self.permitPeriod = int(self.bot.config["SpamProtection"]["permitperiod"])
+        else:
+            self.bot.config["SpamProtection"]["permitperiod"] = str(self.permitPeriod)
+
+
+    
     def getParams(self):
         params = []
         params.append({'title':'AsciiLimit','desc':'Number of non-standard characters allowed in a message before the user is warned','val':self.maxAsciiSpam})

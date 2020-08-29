@@ -25,6 +25,8 @@ class MiLight(Command):
         self.brightness=1.0
         self.lastColour=(255,255,255)
 
+        self.initConfig()
+
         self.bot.subToNotification(NOTIF_CHANNELPOINTS,self.channelPointHandler)
 
         if not self.bot.isCmdRegistered("!light"):
@@ -54,6 +56,27 @@ class MiLight(Command):
                 self.groups.append(self.bridge.add_group(groupnum,str(groupnum),RGBWW))
             
             self.enabled = True
+
+    def initConfig(self):
+        if "MiLight" not in self.bot.config:
+            self.bot.config["MiLight"] = {}
+            
+        if "lightgroup" in self.bot.config["MiLight"]:
+            self.lightgroup = int(self.bot.config["MiLight"]["lightgroup"])
+        else:
+            self.bot.config["MiLight"]["lightgroup"] = str(self.lightgroup)
+
+        if "controllerip" in self.bot.config["MiLight"]:
+            self.lightcontrollerip = self.bot.config["MiLight"]["controllerip"]
+        else:
+            self.bot.config["MiLight"]["controllerip"] = str(self.lightcontrollerip)
+
+        if "controllerport" in self.bot.config["MiLight"]:
+            self.lightcontrollerport = int(self.bot.config["MiLight"]["controllerport"])
+        else:
+            self.bot.config["MiLight"]["controllerport"] = str(self.lightcontrollerport)
+
+        
 
     def channelPointHandler(self,data,sock):
         #print("Got: "+str(data))
