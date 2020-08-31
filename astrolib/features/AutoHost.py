@@ -4,12 +4,28 @@ import time
 configDir = "config"
 
 class AutoHost(Feature):
+    def initConfig(self):
+        if "AutoHost" not in self.bot.config:
+            self.bot.config["AutoHost"] = {}
 
+        if "hostcheckfreq" in self.bot.config["AutoHost"]:
+            self.hostCheckFrequency = int(self.bot.config["AutoHost"]["hostcheckfreq"]) * 2
+        else:
+            self.bot.config["AutoHost"]["hostcheckfreq"] = str(int(self.hostCheckFrequency/2))
+        
+        if "hostlength" in self.bot.config["AutoHost"]:
+            self.hostLength = int(self.bot.config["AutoHost"]["hostlength"])
+        else:
+            self.bot.config["AutoHost"]["hostlength"] = str(int(self.hostLength))
+        
+        
     def __init__(self,bot,name):
         super(AutoHost,self).__init__(bot,name)
 
         self.hostCheckFrequency = 240 #In units based on the pollFreq (in astronomibot.py)
         self.hostLength = 15 #In units based on the hostCheckFrequency!
+
+        self.initConfig()
 
         self.hostUpdate = 1
         self.hostTime = 0

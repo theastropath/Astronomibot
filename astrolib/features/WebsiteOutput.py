@@ -242,6 +242,16 @@ body {{ background: #{background} }}
             #uploadThread.start()
             #print("Number of living threads after: "+str(threading.active_count()))
         
+
+    def initConfig(self):
+        if "WebsiteOutput" not in self.bot.config:
+            self.bot.config["WebsiteOutput"] = {}
+
+        if "htmlupdatefreq" in self.bot.config["WebsiteOutput"]:
+            self.htmlUpdateFreq = int(self.bot.config["WebsiteOutput"]["htmlupdatefreq"]) * 2
+        else:
+            self.bot.config["WebsiteOutput"]["htmlupdatefreq"] = str(int(self.htmlUpdateFreq/2))
+        
             
     def __init__(self,bot,name):
         super(WebsiteOutput,self).__init__(bot,name)
@@ -254,6 +264,8 @@ body {{ background: #{background} }}
         self.ftpDir=""
         self.startUpload = False
         self.refreshFreq=int((bot.pollFreq * self.htmlUpdateFreq)/2)
+
+        self.initConfig()
 
         self.ftpUrl =  self.bot.config["FTP"]["ftpurl"]
         self.ftpUser = self.bot.config["FTP"]["ftpuser"]
