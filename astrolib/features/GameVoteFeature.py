@@ -33,8 +33,8 @@ class GameVoteFeature(Feature):
                         votesUpdated = True
 
                 for vote in votesToRemove:
-                    self.gameVoteCmd.voteTables.votes.remove(vote)
-                    self.gameVoteCmd.voteTables.clearedVotes.append(vote[0])
+                    self.gameVoteCmd.voteTables[table].votes.remove(vote)
+                    self.gameVoteCmd.voteTables[table].clearedVotes.append(vote[0])
 
 
             if votesUpdated:
