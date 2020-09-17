@@ -186,9 +186,11 @@ class SpamProtection(Command):
         for url in self.safeList:
             safelist.append((url,))
 
+        blocked = [("# of Blocked Words",),(str(len(self.blockedWords)))]
 
         tables.append(commands)
         tables.append(safelist)
+        tables.append(blocked)
 
         return tables
 
