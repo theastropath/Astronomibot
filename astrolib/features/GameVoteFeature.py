@@ -14,11 +14,14 @@ class GameVoteFeature(Feature):
         if self.gameVoteUpdate == 0:
             self.gameVoteUpdate = self.gameVoteFreq
             votesUpdated = False
+            #print("Checking for things to remove")
 
             for table in self.gameVoteCmd.voteTables:
+                #print("Checking "+table+" votes")
                 if not self.gameVoteCmd.voteTables[table].gameList:
                     #List must be populated before we should bother here
-                    return
+                    #print(table+" table not populated")
+                    continue
 
                 votesToRemove = []
                 for vote in self.gameVoteCmd.voteTables[table].votes:
@@ -29,6 +32,7 @@ class GameVoteFeature(Feature):
                             if game[1]=="":
                                 found = True
                     if not found:
+                        #print("Need to remove "+str(vote))
                         votesToRemove.append(vote)
                         votesUpdated = True
 
@@ -38,4 +42,6 @@ class GameVoteFeature(Feature):
 
 
             if votesUpdated:
+                #print("Saving votes")
                 self.gameVoteCmd.saveVotes()
+            #print("Done checking")

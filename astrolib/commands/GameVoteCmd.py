@@ -104,6 +104,7 @@ class GameVoteCmd(Command):
     def gameListTask(self):
         while(True):
             for table in self.voteTables:
+                #print("Updating "+table+" game list")
                 self.voteTables[table].updateGameList()
                 
             sleep(300)
@@ -135,6 +136,9 @@ class GameVoteCmd(Command):
                 self.voteTables[keyword] = newTable
         
         self.voteFile = "votes.txt"
+        
+        self.gameListThread = threading.Thread(target=self.gameListTask)
+        self.gameListThread.start()
 
         self.loadVotes()
 
