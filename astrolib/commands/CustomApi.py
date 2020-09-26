@@ -34,7 +34,7 @@ class Api():
                    'Accept-Encoding': 'none',
                    'Accept-Language': 'en-US,en;q=0.8',
                    'Connection': 'keep-alive'}
-            r = requests.get(apiAddress,headers=hdr)
+            r = requests.get(apiAddress,headers=hdr,timeout=1)
             r.raise_for_status()
             response = r.text
         except requests.exceptions.HTTPError as e:
