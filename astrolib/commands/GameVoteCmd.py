@@ -46,6 +46,10 @@ class GameVoteTable():
             
             if 'values' in gamesJson:
                 for game in gamesJson['values']:
+
+                    if len(game)==0:
+                        return
+                    
                     newGame = [game[0]]
                     if len(game)==columnOffset+1:
                         newGame.append(game[columnOffset])
@@ -297,7 +301,7 @@ class GameVoteCmd(Command):
                         if voteLine[0] in self.voteTables:
                             self.voteTables[voteLine[0]].votes.append(newVote)
                         else:
-                            print("Unknown vote keyword: "+voteline[0])
+                            print("Unknown vote keyword: "+voteLine[0])
                                 
                     elif len(voteLine)>=2:
                         newVote = voteLine[1]
