@@ -29,6 +29,11 @@ class MiLight(Command):
 
         self.bot.subToNotification(NOTIF_CHANNELPOINTS,self.channelPointHandler)
 
+        self.createLightColourReward()
+        self.createWhiteLightsReward()
+        self.createDiscoLightsReward()
+        self.createColourSwirlReward()
+
         if not self.bot.isCmdRegistered("!light"):
             self.bot.regCmd("!light",self)
         else:
@@ -76,6 +81,66 @@ class MiLight(Command):
         else:
             self.bot.config["MiLight"]["controllerport"] = str(self.lightcontrollerport)
 
+    def createLightColourReward(self):
+        title = "Light Colour"
+        promptText = "Enter the light colour you want as an English name, a hex colour in the form #RRGGBB, or as decimal values in '<red> <green> <blue>' format"
+        cost = 1000
+        requireText = True
+
+        rewards = self.bot.api.getCustomRewardList(self.bot.channelId)
+
+        if title not in rewards.keys():
+            if not self.bot.api.createCustomReward(self.bot.channelId,title,promptText,cost, requireText):
+                print("Couldn't create 'Light Colour' reward - does it already exist?")
+        else:
+            if not self.bot.api.isCustomRewardModifiable(self.bot.channelId,title):
+                print("ERROR: Custom Reward 'Light Colour' already exists, but isn't owned by Astronomibot - Please delete it")
+                
+    def createWhiteLightsReward(self):
+        title = "White Lights"
+        promptText = "Sets the lights back to their regular white colour"
+        cost = 1
+        requireText = False
+
+        rewards = self.bot.api.getCustomRewardList(self.bot.channelId)
+
+        if title not in rewards.keys():
+            if not self.bot.api.createCustomReward(self.bot.channelId,title,promptText,cost, requireText):
+                print("Couldn't create 'White Lights' reward - does it already exist?")
+        else:
+            if not self.bot.api.isCustomRewardModifiable(self.bot.channelId,title):
+                print("ERROR: Custom Reward 'White Lights' already exists, but isn't owned by Astronomibot - Please delete it")
+                
+    def createDiscoLightsReward(self):
+        title = "Disco Lights"
+        promptText = "This will make the lights flash fun colours!"
+        cost = 4000
+        requireText = False
+
+        rewards = self.bot.api.getCustomRewardList(self.bot.channelId)
+
+        if title not in rewards.keys():
+            if not self.bot.api.createCustomReward(self.bot.channelId,title,promptText,cost, requireText):
+                print("Couldn't create 'Disco Lights' reward - does it already exist?")
+        else:
+            if not self.bot.api.isCustomRewardModifiable(self.bot.channelId,title):
+                print("ERROR: Custom Reward 'Disco Lights' already exists, but isn't owned by Astronomibot - Please delete it")
+                
+    def createColourSwirlReward(self):
+        title = "Colour Swirl"
+        promptText = "Makes the lights gently swirl through the colours!"
+        cost = 4000
+        requireText = False
+
+        rewards = self.bot.api.getCustomRewardList(self.bot.channelId)
+
+        if title not in rewards.keys():
+            if not self.bot.api.createCustomReward(self.bot.channelId,title,promptText,cost, requireText):
+                print("Couldn't create 'Colour Swirl' reward - does it already exist?")
+        else:
+            if not self.bot.api.isCustomRewardModifiable(self.bot.channelId,title):
+                print("ERROR: Custom Reward 'Colour Swirl' already exists, but isn't owned by Astronomibot - Please delete it")
+                
         
 
     def channelPointHandler(self,data,sock):
@@ -88,6 +153,7 @@ class MiLight(Command):
             self.groups[self.lightgroup-1].transition(brightness=1,temperature=0,duration=0)
             self.lastColour=(255,255,255)
             self.lastState = "R255 G255 B255"
+            self.bot.api.fulfillChannelPointRedemption(data["redemptionid"],data["rewardid"],data["channelid"])
             
         elif data["reward"]=="Disco Lights":
             #print("Setting lights to disco mode")
@@ -96,6 +162,8 @@ class MiLight(Command):
             sleep(0.1)
             self.setPartyMode(5)
             self.lastState="Disco Mode"
+            self.bot.api.fulfillChannelPointRedemption(data["redemptionid"],data["rewardid"],data["channelid"])
+
         elif data["reward"]=="Colour Swirl":
             #print("Setting lights to colour swirl")
             self.groups[self.lightgroup-1].on = True
@@ -103,6 +171,20 @@ class MiLight(Command):
             sleep(0.1)
             self.setPartyMode(2)
             self.lastState="Rainbow Swirl Mode"
+            self.bot.api.fulfillChannelPointRedemption(data["redemptionid"],data["rewardid"],data["channelid"])
+
+        elif data["reward"]=="Light Colour":
+            #print("Got: "+str(data))
+            colour = self.parseColour(data["message"])
+            #print("Parsed colour as "+str(colour))
+            if colour==None:
+                self.bot.api.cancelChannelPointRedemption(data["redemptionid"],data["rewardid"],data["channelid"])
+                return
+            else:
+                self.bot.api.fulfillChannelPointRedemption(data["redemptionid"],data["rewardid"],data["channelid"])
+
+            self.setLightColour(colour[0],colour[1],colour[2])
+
 
         return None
         
@@ -176,6 +258,43 @@ class MiLight(Command):
     def paramsChanged(self):
         return self.paramsHaveChanged
 
+    def parseColour(self,colourMsg):
+        splitMsg = colourMsg.split()
+        rgbVal = None
+
+        if len(splitMsg)==3:
+            #Might be R G B format
+            if splitMsg[0].isnumeric() and splitMsg[1].isnumeric() and splitMsg[2].isnumeric():
+                try:
+                    r = max(0,min(int(splitMsg[0]),255))
+                    g = max(0,min(int(splitMsg[1]),255))
+                    b = max(0,min(int(splitMsg[2]),255))
+                    rgbVal = (r,g,b)
+                except:
+                    pass
+                
+        elif len(splitMsg)==1:
+            #Could be hex or text
+            if colourMsg.startswith("#") and len(colourMsg)==7:
+                 #Hex value?
+                 try:
+                     r = max(0,min(int(colourMsg[1:3],16),255))
+                     g = max(0,min(int(colourMsg[3:5],16),255))
+                     b = max(0,min(int(colourMsg[5:],16),255))
+                     rgbVal = (r,g,b)
+                 except:
+                    pass
+            else:
+                #Text name
+                try:
+                    rgbInt = webcolors.name_to_rgb(colourMsg)
+                    rgbVal = (rgbInt[0],rgbInt[1],rgbInt[2])
+                except:
+                    pass
+
+        return rgbVal
+                
+
     def shouldRespond(self, msg, userLevel):
         if not self.enabled:
             return False
@@ -185,11 +304,11 @@ class MiLight(Command):
             splitMsg = msg.msg.split()
             if splitMsg[0]=='!light' and len(splitMsg)==4:
                 if splitMsg[1].isdigit() and splitMsg[2].isdigit() and splitMsg[3].isdigit():
-                    return True
+                    return False
             if splitMsg[0]=='!light' and len(splitMsg)==2:
                 try:
                     webcolors.name_to_rgb(splitMsg[1])
-                    return True
+                    return False
                 except:
                     return False
             if splitMsg[0]=='!disco':
@@ -218,6 +337,31 @@ class MiLight(Command):
         sleep(0.1)
         self.bridge._send_raw(message) #Send twice as sometimes it doesn't actually happen
 
+
+    def setLightColour(self,red,green,blue):
+            fullWhite = False
+
+            if red==255 and green==255 and blue==255:
+                fullWhite = True
+
+            #self.cont.send(self.light.color(milight.color_from_rgb(red,green,blue),self.lightgroup))
+            if fullWhite:
+                self.groups[self.lightgroup-1].on = True
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,temperature=0)
+                sleep(0.1)
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,temperature=0)
+                
+            elif red or green or blue:
+                self.groups[self.lightgroup-1].on = True
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,color=Color(red,green,blue))
+                sleep(0.1)
+                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,color=Color(red,green,blue))
+
+            else:
+                self.groups[self.lightgroup-1].on = False
+
+            self.lastColour=(red,green,blue)
+            self.lastState = "R"+str(red)+" G"+str(green)+" B"+str(blue)        
 
     def respond(self,msg,sock):
         splitMsg = msg.msg.split()
@@ -249,29 +393,8 @@ class MiLight(Command):
                 elif blue>255:
                     blue=255
                     
-            fullWhite = False
-
-            if red==255 and green==255 and blue==255:
-                fullWhite = True
-
-            #self.cont.send(self.light.color(milight.color_from_rgb(red,green,blue),self.lightgroup))
-            if fullWhite:
-                self.groups[self.lightgroup-1].on = True
-                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,temperature=0)
-                sleep(0.1)
-                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,temperature=0)
-                
-            elif red or green or blue:
-                self.groups[self.lightgroup-1].on = True
-                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,color=Color(red,green,blue))
-                sleep(0.1)
-                self.groups[self.lightgroup-1].transition(brightness=self.brightness,duration=0,color=Color(red,green,blue))
-
-            else:
-                self.groups[self.lightgroup-1].on = False
-
-            self.lastColour=(red,green,blue)
-            self.lastState = "R"+str(red)+" G"+str(green)+" B"+str(blue)
+            self.setLightColour(red,green,blue)
+            
             response = "Light changed to R"+str(red)+" G"+str(green)+" B"+str(blue)
 
         elif splitMsg[0]=='!disco':

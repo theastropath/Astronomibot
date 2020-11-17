@@ -436,4 +436,73 @@ class TwitchApi:
         if channelId:
             return self.setTitleByIdHelix(channelId,title)
         return False
+
+    def updateChannelPointRedemptionStatus(self,redeemId,rewardId,channelId,status):
+        data = {"status": status}
+        try:
+            result = self._helixRequest("https://api.twitch.tv/helix/channel_points/custom_rewards/redemptions?broadcaster_id=%s&reward_id=%s&id=%s" % (channelId,rewardId,redeemId), data, 'PATCH')
+            print(str(result))
+            return True
+
+        except HTTPError as e:
+            print("updateChannelPointRedemptionStatus: "+str(e))
+
+        return False
+
+    def fulfillChannelPointRedemption(self,redeemId,rewardId,channelId):
+        return self.updateChannelPointRedemptionStatus(redeemId,rewardId,channelId,"FULFILLED")
+    
+    def cancelChannelPointRedemption(self,redeemId,rewardId,channelId):
+        return self.updateChannelPointRedemptionStatus(redeemId,rewardId,channelId,"CANCELED")
+
+    def createCustomReward(self,channelId,title,prompt,cost, requireText):
+        data = {"title": title,"prompt":prompt,"cost":cost,"is_user_input_required":str(requireText)}
+        try:
+            result = self._helixRequest("https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id=%s" % channelId, data, 'POST')
+            #print(str(result))
+            return True
+
+        except HTTPError as e:
+            print("createCustomReward: "+str(e))
+
+        return False
+
+    def getCustomRewardList(self,channelId):
+        try:
+            rewards = self._helixRequest("https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id=%s" % channelId)
+            #print(str(rewards))
+            if "data" in rewards:
+                rewardDict = dict()
+                for reward in rewards["data"]:
+                    #print(reward["title"])
+                    rewardDict[reward["title"]]=reward
+
+                #print(str(rewardDict.keys()))
+                return rewardDict
+
+        except HTTPError as e:
+            print("getCustomRewardList: "+str(e))
+
+        return None
+
+    def isCustomRewardModifiable(self,channelId,rewardName):
+        data = {"title": rewardName}
+        rewardId = ""
+
+        rewards = self.getCustomRewardList(channelId);
+        if rewardName in rewards:
+            rewardId = rewards[rewardName]["id"]
+        else:
+            return False
+
+        try:
+            result = self._helixRequest("https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id=%s&id=%s" % (channelId,rewardId),data, 'PATCH')
+            #print("Modifiable? "+str(result))
+            if "data" in result and "error" not in result:
+                return True
+
+        except HTTPError as e:
+            print("isCustomRewardModifiable: "+str(e))
+
+        return False
     

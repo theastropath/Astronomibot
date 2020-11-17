@@ -83,20 +83,35 @@ class TwitchWebSocketApp(websocket.WebSocketApp):
                 username = ""
                 title = ""
                 userinput = ""
+                channelid = ""
+                redemptionId = ""
+                rewardId = ""
 
                 if "data" in jsonMsg and "redemption" in jsonMsg["data"]:
+                    #print(str(jsonMsg["data"]))
                     red = jsonMsg["data"]["redemption"]
                     if "user" in red and red["user"] and "display_name" in red["user"]:
                         username = red["user"]["display_name"]
 
-                    if "reward" in red and red["reward"] and "title" in red["reward"]:
-                        title = red["reward"]["title"]
+                    if "reward" in red and red["reward"]:
+                        if "title" in red["reward"]:
+                            title = red["reward"]["title"]
+
+                        if "channel_id" in red["reward"]:
+                            channelid = red["reward"]["channel_id"]
+
+                        if "id" in red["reward"]:
+                            rewardId = red["reward"]["id"]
 
                     if "user_input" in red and red["user_input"]:
                         userinput = red["user_input"]
 
+                    if "id" in red:
+                        redemptionId = red["id"]
+
+
                 print("Reward was redeemed by "+username+" for: "+title+"   User said: "+userinput)
-                qMsg = {"type":NOTIF_CHANNELPOINTS,"data":{"username":username,"reward":title,"message":userinput}}
+                qMsg = {"type":NOTIF_CHANNELPOINTS,"data":{"username":username,"reward":title,"message":userinput,"channelid":channelid,"redemptionid":redemptionId,"rewardid":rewardId}}
                 try:
                     ws.bot.msgQ.put_nowait(qMsg)
                 except Exception as e:
