@@ -437,6 +437,8 @@ class TwitchApi:
             return self.setTitleByIdHelix(channelId,title)
         return False
 
+    #Redemption status can only be updated if the reward was created by your client ID, so make sure to check if you can modify it
+    #before using this API (ie. check with isCustomRewardModifiable first)
     def updateChannelPointRedemptionStatus(self,redeemId,rewardId,channelId,status):
         data = {"status": status}
         try:
@@ -455,6 +457,8 @@ class TwitchApi:
     def cancelChannelPointRedemption(self,redeemId,rewardId,channelId):
         return self.updateChannelPointRedemptionStatus(redeemId,rewardId,channelId,"CANCELED")
 
+    #You can't create duplicate rewards, so before creating one, you should check if it exists, and also that you can modify it
+    #(If you want to be able to cancel and refund the rewards if things go wrong)
     def createCustomReward(self,channelId,title,prompt,cost, requireText):
         data = {"title": title,"prompt":prompt,"cost":cost,"is_user_input_required":str(requireText)}
         try:
@@ -485,6 +489,10 @@ class TwitchApi:
 
         return None
 
+    #Twitch, in their infinite wisdom, made it such that you can only touch rewards that were created by your client ID (NOT just a matching user)
+    #Of course, they also didn't provide a way to check if you are able to modify an existing reward, or check what client ID created it.
+    #By "updating" the reward with an identical title, we are either allowed to do it, or get a "Forbidden" error if we aren't allowed.
+    #Note that if we don't pass in any fields to modify, it responds successfully, as though we are allowed to modify the reward.
     def isCustomRewardModifiable(self,channelId,rewardName):
         data = {"title": rewardName}
         rewardId = ""
