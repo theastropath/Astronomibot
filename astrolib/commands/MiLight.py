@@ -179,7 +179,10 @@ class MiLight(Command):
             #print("Parsed colour as "+str(colour))
             if colour==None:
                 self.bot.api.cancelChannelPointRedemption(data["redemptionid"],data["rewardid"],data["channelid"])
-                return
+                baseResponse = "Couldn't understand colour '"+data["message"]+"'..."
+                response = "PRIVMSG "+self.bot.channel+" :"+baseResponse+"\n"
+                sock.sendall(response.encode('utf-8'))
+                return baseResponse
             else:
                 self.bot.api.fulfillChannelPointRedemption(data["redemptionid"],data["rewardid"],data["channelid"])
 

@@ -44,18 +44,18 @@ a client secret that you can enter into the "clientsecret" field.
 
 Navigate to:
 
-    https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=<Application Client ID>&redirect_uri=http://localhost&scope=channel_editor channel_read user:edit:broadcast bits:read channel:read:redemption channel_subscriptions
+    https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=<Application Client ID>&redirect_uri=http://localhost&scope=channel_editor channel_read user:edit:broadcast bits:read channel:read:redemptions channel_subscriptions channel:manage:redemptions
 
 Log in as the channel owner, and you'll be sent to an localhost address that will look like this, containing your access token:
 
-    http://localhost/#access_token=<Access Token>&scope=channel_editor channel_read user:edit:broadcast bits:read channel:read:redemption channel_subscriptions
+    http://localhost/#access_token=<Access Token>&scope=channel_editor channel_read user:edit:broadcast bits:read channel:read:redemptions channel_subscriptions channel:manage:redemptions
 
 Grab the access token from the URL and enter it as the "accesstoken" field.
 
 
 Alternately, use the token generator available at https://twitchapps.com/tokengen making sure to request the following scopes: 
 
-    channel_editor channel_read user:edit:broadcast bits:read channel:read:redemption channel_subscriptions
+    channel_editor channel_read user:edit:broadcast bits:read channel:read:redemptions channel_subscriptions channel:manage:redemptions
 
 
 # Credentials for other Modules:

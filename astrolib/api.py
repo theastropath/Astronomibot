@@ -441,7 +441,7 @@ class TwitchApi:
         data = {"status": status}
         try:
             result = self._helixRequest("https://api.twitch.tv/helix/channel_points/custom_rewards/redemptions?broadcaster_id=%s&reward_id=%s&id=%s" % (channelId,rewardId,redeemId), data, 'PATCH')
-            print(str(result))
+            #print(str(result))
             return True
 
         except HTTPError as e:
