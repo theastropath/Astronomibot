@@ -1,6 +1,7 @@
 import os
 from astrolib.feature import Feature
 import time
+import json
 configDir = "config"
 
 class AutoHost(Feature):
@@ -17,6 +18,11 @@ class AutoHost(Feature):
             self.hostLength = int(self.bot.config["AutoHost"]["hostlength"])
         else:
             self.bot.config["AutoHost"]["hostlength"] = str(int(self.hostLength))
+
+        if "gameblocklist" in self.bot.config["AutoHost"]:
+            self.gameBlockList = json.loads(self.bot.config["AutoHost"]["gameblocklist"])
+        else:
+            self.bot.config["AutoHost"]["gameblocklist"] = json.dumps(self.gameBlockList)
         
         
     def __init__(self,bot,name):
@@ -24,6 +30,7 @@ class AutoHost(Feature):
 
         self.hostCheckFrequency = 240 #In units based on the pollFreq (in astronomibot.py)
         self.hostLength = 15 #In units based on the hostCheckFrequency!
+        self.gameBlockList = []
 
         self.initConfig()
 
@@ -32,6 +39,8 @@ class AutoHost(Feature):
         self.offlineTime = 0
         self.hostList = []
         self.hostListFile = "AutoHostList.txt"
+
+        self.gameBlockList = []
 
         self.hostChannel = ""
         self.hosting =  (self.bot.hostedChannel!=None)
@@ -170,9 +179,26 @@ class AutoHost(Feature):
                         else:
                             self.hostTime += 1
 
+                #Make sure we aren't hosting someone who is playing a game we have blocked
+                if self.hosting:
+                    gamename = self.bot.api.getGameByNameHelix(self.bot.hostedChannel)
+                    if gamename in self.gameBlockList:
+                        print(self.bot.hostedChannel+" is now playing a blocked game ("+gamename+")")
+                        self.stopHosting(sock)
+
                 #Check for channels in host list that are online
                 if not self.hosting or checkForNewHost:
-                    onlineList = self.bot.api.areStreamsOnlineHelix(self.hostList)
+                    streamList = self.bot.api.getOnlineStreamsAndGamesHelix(self.hostList)
+
+                    onlineList = []
+                    for stream in streamList:
+                        channel = stream[0]
+                        gamename = stream[1]
+                        #print(channel+" is streaming "+gamename)
+                        if gamename not in self.gameBlockList:
+                            onlineList.append(channel)
+                        else:
+                            print(channel+" is streaming blocked game "+gamename)
 
                     if len(onlineList)>0:
                         #print(str(onlineList))

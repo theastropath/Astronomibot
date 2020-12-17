@@ -246,16 +246,17 @@ class SpamProtection(Command):
         return 0
 
     def urlSpamCheck(self,msg,userLevel):
-        if msg.sender in self.permitList.keys():
-            if time.time()-self.permitList[msg.sender] < (self.permitPeriod*60):
+        sender = msg.sender.lower()
+        if sender in self.permitList.keys():
+            if time.time()-self.permitList[sender] < (self.permitPeriod*60):
                 try:
-                    del self.permitList[msg.sender]
+                    del self.permitList[sender]
                 except:
                     pass #If it fails...  I don't really care?  It's gone anyway
                 return False
             else:
                 try:
-                    del self.permitList[msg.sender]
+                    del self.permitList[sender]
                 except:
                     pass #If it fails...  I don't really care?  It's gone anyway
 
@@ -381,8 +382,8 @@ class SpamProtection(Command):
             fullmsg = msg.msg.split()
             if fullmsg[0]=="!permit" and len(fullmsg)>1:
                 response = fullmsg[1]+" may post one link for up to "+str(self.permitPeriod)+" minutes"
-                self.permitList[fullmsg[1]]=time.time()
-                self.bot.addLogMessage("Spam Protection: Granted permit to "+msg.sender+" for "+str(self.permitPeriod)+" minutes")
+                self.permitList[fullmsg[1].lower()]=time.time()
+                self.bot.addLogMessage("Spam Protection: Granted permit to "+fullmsg[1]+" for "+str(self.permitPeriod)+" minutes")
                 #print(str(self.permitList))
             elif fullmsg[0]=="!addsafe" and len(fullmsg)>1:
                 response = "Added "+fullmsg[1]+" to the URL safe list"

@@ -337,6 +337,17 @@ class TwitchApi:
                         onlineList.append(stream["user_name"].lower())
                         #print(stream["user_name"])
         return onlineList
+    
+    def getOnlineStreamsAndGamesHelix(self,namelist):
+        stream = self.getStreamFromNameListHelix(namelist)
+        onlineList = []
+        if stream:
+            if "data" in stream:
+                for stream in stream["data"]:
+                    if "user_name" in stream and "game_name" in stream:
+                        onlineList.append((stream["user_name"].lower(),stream["game_name"]))
+                        #print(stream["user_name"])
+        return onlineList
 
     def getStreamLiveTimeHelix(self, username):
         stream = self.getStreamFromNameHelix(username)
