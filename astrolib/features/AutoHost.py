@@ -40,8 +40,6 @@ class AutoHost(Feature):
         self.hostList = []
         self.hostListFile = "AutoHostList.txt"
 
-        self.gameBlockList = []
-
         self.hostChannel = ""
         self.hosting =  (self.bot.hostedChannel!=None)
         self.botUnhost=False
