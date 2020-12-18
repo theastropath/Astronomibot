@@ -195,8 +195,8 @@ class AutoHost(Feature):
                         #print(channel+" is streaming "+gamename)
                         if gamename not in self.gameBlockList:
                             onlineList.append(channel)
-                        else:
-                            print(channel+" is streaming blocked game "+gamename)
+                        #else:
+                        #    print(channel+" is streaming blocked game "+gamename)
 
                     if len(onlineList)>0:
                         #print(str(onlineList))
