@@ -30,6 +30,9 @@ class Command:
     def getDescription(self,full=False):
         return "A generic undescribed Command"
 
+    def htmlInDesc(self):
+        return False
+
     #Equals is used for checking if the name is in the command list
     def __eq__(self,key):
         return key == self.name

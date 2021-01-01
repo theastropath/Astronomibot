@@ -122,11 +122,17 @@ body {{ background: #{background} }}
     def htmlLink(self,text,url):
         return templ('<a href="{url}">{text}</a>', url=url, text=text)
 
-    def generateTablePage(self,tables,name,fullDescription="",filename=""):
+    def generateTablePage(self,tables,name,descHasHtml,fullDescription="",filename="",allowHtml=False):
+
+        if descHasHtml:
+            desc = HtmlSafeStr(fullDescription.replace("\n",'<br/>'))
+        else:
+            desc = HtmlSafeStr('<br/>').join(fullDescription.split('\n'))
+        
         buf = [
             self.startHtmlFile(name, "DCDCDC"),
             templ("<h1>{name}</h1>", name=name),
-            HtmlSafeStr('<br/>').join(fullDescription.split('\n')),
+            desc,
             '<br/><br/>'
         ]
 
@@ -147,7 +153,11 @@ body {{ background: #{background} }}
                 for row in table[1:]:
                     buf.append('<tr>')
                     for element in row:
-                        buf.append(templ('<td>{cell}</td>', cell=element))
+                        if allowHtml and isinstance(element,str):
+                            buf.append(templ('<td>'+element+'</td>',cell=element))
+                        else:
+                            buf.append(templ('<td>{cell}</td>', cell=element))
+
                     buf.append('</tr>')
 
                 buf.append("</tbody></table><br/><br/>")
@@ -216,21 +226,21 @@ body {{ background: #{background} }}
             state = cmd.getState()
             if state != None:
                 indexMods.append(cmd)
-                self.generateTablePage(state,cmd.name,cmd.getDescription(True))
+                self.generateTablePage(state,cmd.name,cmd.htmlInDesc(),cmd.getDescription(True))
 
         for ftr in self.bot.getFeatures():
             state = ftr.getState()
             if state != None:
                 indexMods.append(ftr)
-                self.generateTablePage(state,ftr.name,ftr.getDescription(True))
+                self.generateTablePage(state,ftr.name,ftr.htmlInDesc(),ftr.getDescription(True))
 
         for mod in indexMods:
             indexTable.append((self.htmlLink(mod.name,mod.name+".html"),mod.getDescription()))
 
-        self.generateTablePage([[("User","User Level")]+self.bot.getChatters()],"Chatters","All users currently in the chat channel","chatters")
-        indexTable.append((self.htmlLink("Chatters","chatters.html"),"A list of all users in chat"))
+        self.generateTablePage([[("User","User Level")]+self.bot.getChatters()],"Chatters",False,"All users currently in the chat channel","Chatters")
+        indexTable.append((self.htmlLink("Chatters","Chatters.html"),"A list of all users in chat"))
 
-        self.generateTablePage([indexTable],"Astronomibot","","index")
+        self.generateTablePage([indexTable],"Astronomibot",False,"","index",True)
 
         if self.ftpUrl!="":
             #This should probably be more threadsafe, but it's probably fine considering the low risk

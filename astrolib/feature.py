@@ -26,6 +26,9 @@ class Feature:
     def getDescription(self,full=False):
         return "A generic undescribed Feature"
 
+    def htmlInDesc(self):
+        return False
+
     #Equals is used for checking if the name is in the feature list
     def __eq__(self,key):
         return key == self.name

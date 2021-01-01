@@ -157,10 +157,14 @@ class GameVoteCmd(Command):
             
 
     def getDescription(self,full=False):
+        listurl = 'https://docs.google.com/spreadsheets/d/'+self.sheetId
         if full and self.credsAvailable:
-            return 'Let viewers vote for games and randomizers.  The list of games can be found here: https://docs.google.com/spreadsheets/d/'+self.sheetId
+            return 'Let viewers vote for games and randomizers.  The list of games can be found here: <a href="'+listurl+'">Game List</a>'
         else:
-            return "Let viewers vote for games"
+            return 'Let viewers vote for games.  <a href="'+listurl+'">Game List</a>'
+        
+    def htmlInDesc(self):
+        return True
 
     def getState(self):
         tables = []
