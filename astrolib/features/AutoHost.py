@@ -41,7 +41,7 @@ class AutoHost(Feature):
         self.hostListFile = "AutoHostList.txt"
 
         self.hostChannel = ""
-        self.hosting =  (self.bot.hostedChannel!=None)
+        self.hosting =  (self.bot.hostedChannel!=None and self.bot.hostedChannel!="")
         self.botUnhost=False
 
         self.bot.subToNotices(self.handleNotice)
@@ -137,6 +137,9 @@ class AutoHost(Feature):
         if self.coolOff:
             self.coolOff= self.coolOff - 1
             return
+
+        if self.bot.hostedChannel == None:
+            return
         
         #Check to see if we need to look for hosting opportunities
         self.hostUpdate = self.hostUpdate - 1
@@ -169,7 +172,7 @@ class AutoHost(Feature):
                     #Make sure we are still hosting a channel
                     #If not, mark us as not hosting
                 if self.hosting:
-                    if self.bot.hostedChannel == None:
+                    if self.bot.hostedChannel == "":
                         self.stopHosting(sock)
                     else:
                         if self.hostTime > self.hostLength:

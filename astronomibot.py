@@ -242,6 +242,7 @@ class TwitchWebSocketApp(websocket.WebSocketApp):
     def on_error(ws,error):
         curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
         print(curTime + " - PubSub Websocket encountered an error: "+str(error))
+        ws.close()
 
     def on_close(ws):
         curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
@@ -305,15 +306,17 @@ class Bot:
 
     def cachingTask(self):
         while True:
-            try:
-                hostedChannel = self.api.getCurrentlyHostedChannel(self.channelId)
-                if (hostedChannel!=self.hostedChannel):
-                    #Do this separately just to ensure that it is a single set for thread safety
-                    self.hostedChannel = hostedChannel
-                    #print("Now hosting: "+str(hostedChannel))
-            except:
-                print("Couldn't get hosted channel")
-                pass #We don't really need to do anything if the lookup fails
+
+            #The hosted channel undocumented API doesn't work anymore
+            #try:
+            #    hostedChannel = self.api.getCurrentlyHostedChannel(self.channelId)
+            #    if (hostedChannel!=self.hostedChannel):
+            #        #Do this separately just to ensure that it is a single set for thread safety
+            #        self.hostedChannel = hostedChannel
+            #        #print("Now hosting: "+str(hostedChannel))
+            #except:
+            #    print("Couldn't get hosted channel")
+            #    pass #We don't really need to do anything if the lookup fails
 
             try:
                 online = self.api.isStreamOnlineHelix(self.channelName)
@@ -352,7 +355,7 @@ class Bot:
         self.config = config
         self.configFile = configFile
 
-        self.hostedChannel = None
+        self.hostedChannel = ""
         self.streamOnline = False
         self.cachingThread = threading.Thread(target=self.cachingTask)
         self.cachingThread.start()
@@ -563,13 +566,21 @@ def connectToServer(channel,nick,passw):
             print ("Connection failed.  Retry...")
             sleep(10) #Wait 10 seconds, then try again
 
+#    sock.sendall(
+#        b"PASS "+passw.encode('ascii')+b"\n"+
+#        b"NICK "+nick.encode('ascii')+b"\n"+
+#        b"JOIN "+channel.encode('ascii')+b"\n"+
+#        b"CAP REQ :twitch.tv/commands\n"+
+#        b"CAP REQ :twitch.tv/tags\n"+
+#        b"CAP REQ :twitch.tv/membership\n")
+    
     sock.sendall(
-        b"PASS "+passw.encode('ascii')+b"\n"+
-        b"NICK "+nick.encode('ascii')+b"\n"+
-        b"JOIN "+channel.encode('ascii')+b"\n"+
         b"CAP REQ :twitch.tv/commands\n"+
         b"CAP REQ :twitch.tv/tags\n"+
-        b"CAP REQ :twitch.tv/membership\n")
+        b"CAP REQ :twitch.tv/membership\n"+
+        b"PASS "+passw.encode('ascii')+b"\n"+
+        b"NICK "+nick.encode('ascii')+b"\n"+
+        b"JOIN "+channel.encode('ascii')+b"\n")
 
     modUpdate = 1 #Start at 1 so that it will grab the mod list on the first pass
 
@@ -865,6 +876,19 @@ if __name__ == "__main__":
                     # motd end
                     print(msg.msg)
                     print("---------------------------")
+                elif msg.messageType == 'HOSTTARGET':
+                    bot.hostedChannel = msg.msg
+                    print("Hosting channel "+bot.hostedChannel)
+                elif msg.messageType == 'USERNOTICE':
+                    notice = ""
+                    if (msg.tags):
+                        if 'system-msg' in msg.tags:
+                            notice+=msg.tags['system-msg']
+                            notice+=": "
+                    notice += msg.msg
+                    logMessage(msg.sender,notice)
+                    
+                    
 
 
                 for command in bot.getCommands():

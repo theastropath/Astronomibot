@@ -217,14 +217,17 @@ class TwitchApi:
 
         return False
 
+    #This API endpoint doesn't seem to exist anymore
     def getCurrentlyHostedChannel(self, channelId):
         if channelId is None:
             return None
 
+        print("getCurrentlyHostedChannel: This endpoint no longer exists")
+
         try:
             hostsList = self._pubRequest("https://tmi.twitch.tv/hosts?"+urlencode({'include_logins': '1', 'host': channelId}))
             host = hostsList['hosts'][0]
-            return host.get('target_login', None)
+            return host.get('target_login', "")
 
         except HTTPError as e:
             print("getCurrentlyHostedChannel: "+str(e))

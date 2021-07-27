@@ -110,13 +110,27 @@ class IrcMessage:
             # 'CAP * ACK'
             self.messageType = ' '.join((messageType, breakdown[0], breakdown[1]))
             self.msg = breakdown[2]
-
+        elif messageType == 'HOSTTARGET':
+            breakdown = rest.split()
+            self.sender = breakdown[0][1:] #Everything past the #, the channel doing the hosting
+            self.msg = breakdown[1][1:]   #Everything past the :, the channel being hosted
+            if self.msg == '-': #Unhost is marked with a dash for some reason
+                self.msg = ''
+        elif messageType == 'USERNOTICE':
+            breakdown = rest.split()
+            self.sender = 'twitch'
+            self.channel = breakdown[0]
+            self.msg = breakdown[1][1:] if len(breakdown) > 1 else ''
+            
         elif messageType.isdecimal():
             # motd and such
             breakdown = rest.split(None, 1)
             self.receiver = breakdown[0]
             self.sender = prefix[1:]
             self.msg = breakdown[1][1:]
+
+        #else:
+        #    print("Other message type: "+messageType)
 
         if not self.msg:
             self.messageType = 'INVALID'
