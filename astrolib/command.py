@@ -37,6 +37,9 @@ class Command:
     def __eq__(self,key):
         return key == self.name
 
+    def __str__(self):
+        return "Command "+self.name
+
     def __init__(self,bot,name):
         self.name = name
         self.bot = bot

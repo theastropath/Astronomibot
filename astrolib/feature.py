@@ -32,7 +32,10 @@ class Feature:
     #Equals is used for checking if the name is in the feature list
     def __eq__(self,key):
         return key == self.name
-
+    
+    def __str__(self):
+        return "Feature "+self.name
+    
     def __init__(self,bot,name):
         self.name = name
         self.bot = bot
