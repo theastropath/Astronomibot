@@ -883,7 +883,7 @@ if __name__ == "__main__":
                     notice = ""
                     if (msg.tags):
                         if 'system-msg' in msg.tags:
-                            notice+=msg.tags['system-msg']
+                            notice+=msg.tags['system-msg'].replace("\s"," ")
                             notice+=": "
                     notice += msg.msg
                     logMessage(msg.sender,notice)

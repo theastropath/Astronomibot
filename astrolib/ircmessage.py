@@ -117,7 +117,7 @@ class IrcMessage:
             if self.msg == '-': #Unhost is marked with a dash for some reason
                 self.msg = ''
         elif messageType == 'USERNOTICE':
-            breakdown = rest.split()
+            breakdown = rest.split(None,1)
             self.sender = 'twitch'
             self.channel = breakdown[0]
             self.msg = breakdown[1][1:] if len(breakdown) > 1 else ''
