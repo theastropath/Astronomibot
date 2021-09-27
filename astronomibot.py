@@ -291,9 +291,19 @@ class Bot:
             print ("Log file is not present")
 
     def pubSubTask(self):
+        cycles = 0
         while True:
             self.pubSub.run_forever(ping_interval=180)
             time.sleep(1)
+            cycles+=1
+
+            if (cycles==10):
+                cycles = 0
+                del self.pubSub #Just to make sure
+                print("Recreating PubSub socket after 10 reconnects")
+                self.pubSub = TwitchWebSocketApp("wss://pubsub-edge.twitch.tv",self.channelId,self.api.accessToken,self)
+
+                
 
     def subToNotification(self,notifType,callback):
         if notifType not in NOTIF_TYPES:

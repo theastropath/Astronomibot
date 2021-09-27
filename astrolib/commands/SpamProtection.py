@@ -26,6 +26,7 @@ url_re = re.compile(url, re.VERBOSE | re.MULTILINE)
 configDir = "config"
 safeFile = "safelist.txt"
 blockedWordsFile = "blockedwords.txt"
+blockedNamePrefixesFile = "blockednameprefixes.txt"
 
 class SpamOffender:
 
@@ -70,6 +71,8 @@ class SpamProtection(Command):
         self.permitList = {}
         self.safeList = set()
         self.blockedWords = set()
+        self.blockedNamePrefixes = set()
+        self.compiledPrefixRe = dict()
 
         self.initConfig()
 
@@ -82,6 +85,7 @@ class SpamProtection(Command):
         self.extractor.set_stop_chars_left(stopLeft)
 
         self.loadBlockedWords()
+        self.loadBlockedNamePrefixes()
 
         #Load safe list
         if not os.path.exists(configDir+os.sep+self.bot.channel[1:]):
@@ -119,6 +123,17 @@ class SpamProtection(Command):
             self.bot.regCmd("!delblockedword",self)
         else:
             print("!delblockedword is already registered to ",self.bot.getCmdOwner("!delblockedword"))
+
+            
+        if not self.bot.isCmdRegistered("!addblockedprefix"):
+            self.bot.regCmd("!addblockedprefix",self)
+        else:
+            print("!addblockedprefix is already registered to ",self.bot.getCmdOwner("!addblockedprefix"))
+            
+        if not self.bot.isCmdRegistered("!delblockedprefix"):
+            self.bot.regCmd("!delblockedprefix",self)
+        else:
+            print("!delblockedprefix is already registered to ",self.bot.getCmdOwner("!delblockedprefix"))
 
     def initConfig(self):
         if "SpamProtection" not in self.bot.config:
@@ -181,12 +196,14 @@ class SpamProtection(Command):
         commands.append(("!delsafe [url]","Removes a URL from the safe list, meaning it can no longer be posted without a permit.  (Mod Only)","!delsafe google.com"))
         commands.append(("!addblockedword [word]","Adds a word to the blocklist, which results in an immediate timeout.  (Mod Only)","!addblockedword butt"))
         commands.append(("!delblockedword [word]","Removes a word from the blocklist.  (Mod Only)","!delblockedword butt"))
+        commands.append(("!addblockedprefix [word]","Adds a name prefix to the blocklist - Any message from a name matching a blocked prefix is instabanned.  (Mod Only)","!addblockedprefix hoss00312_"))
+        commands.append(("!delblockedprefix [word]","Removes a name prefix from the blocklist.  (Mod Only)","!delblockedprefix hoss00312_"))
 
         safelist = [("URL Safe List",)]
         for url in self.safeList:
             safelist.append((url,))
 
-        blocked = [("# of Blocked Words",),(str(len(self.blockedWords)))]
+        blocked = [("# of Blocked Words","# of Blocked Name Prefixes",),(str(len(self.blockedWords)),str(len(self.blockedNamePrefixes)))]
 
         tables.append(commands)
         tables.append(safelist)
@@ -230,6 +247,40 @@ class SpamProtection(Command):
                     self.blockedWords.add(blockword)
         except FileNotFoundError:
             print ("Blocked Word list file is not present")
+
+    def saveBlockedNamePrefixes(self):
+        with open(configDir+os.sep+self.bot.channel[1:]+os.sep+blockedNamePrefixesFile,mode='w',encoding="utf-8") as f:
+            for word in self.blockedNamePrefixes:
+                f.write(word.lower()+"\r\n")
+
+    def loadBlockedNamePrefixes(self):
+        try:
+            with open(configDir+os.sep+self.bot.channel[1:]+os.sep+blockedNamePrefixesFile,encoding='utf-8') as f:
+                for line in f:
+                    blockname = line.strip()
+                    self.blockedNamePrefixes.add(blockname)
+                    self.compiledPrefixRe[blockname]=re.compile(blockname)
+
+        except FileNotFoundError:
+            print ("Blocked Name Prefixes list file is not present")
+
+    def blockedNamePrefixCheck(self,msg,userLevel):
+        for prefix in self.blockedNamePrefixes:
+            #if msg.sender.lower().startswith(prefix):
+            #    return True
+            if self.compiledPrefixRe[prefix].match(msg.sender.lower()):
+                return True
+        return False
+    
+    def addBlockedPrefix(self,word):
+        self.blockedNamePrefixes.add(word)
+        self.compiledPrefixRe[word]=re.compile(word)
+        self.saveBlockedNamePrefixes()
+
+    def delBlockedPrefix(self,word):
+        self.blockedNamePrefixes.remove(word)
+        del self.compiledPrefixRe[word]
+        self.saveBlockedNamePrefixes()
         
     def blockedWordCheck(self,msg,userLevel):
         for word in self.blockedWords:
@@ -271,7 +322,7 @@ class SpamProtection(Command):
         if msg.messageType == 'PRIVMSG':
             if not onlySafe:
                 return True
-        return False
+        return False     
 
     def shouldRespond(self, msg, userLevel):
 
@@ -289,6 +340,10 @@ class SpamProtection(Command):
                 return True
             elif fullmsg[0]=="!delblockedword" and len(fullmsg)>1:
                 return True
+            elif fullmsg[0]=="!addblockedprefix" and len(fullmsg)>1:
+                return True
+            elif fullmsg[0]=="!delblockedprefix" and len(fullmsg)>1:
+                return True
 
         if userLevel != EVERYONE:
             return False
@@ -297,6 +352,9 @@ class SpamProtection(Command):
             return False
 
         if self.blockedWordCheck(msg,userLevel):
+            return True
+
+        if self.blockedNamePrefixCheck(msg,userLevel):
             return True
 
         if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
@@ -318,9 +376,20 @@ class SpamProtection(Command):
         warnOnly = True
         noWarning = False
         spam = False
+        instaban = False
 
         if userLevel == EVERYONE:
-            if self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
+            if self.blockedNamePrefixCheck(msg,userLevel):
+                response = "User "+msg.sender+" has a blocked name prefix, instabanning.  If this was a mistake, please send an unban request"
+                noWarning = True
+                instaban = True
+                
+            elif self.blockedWordCheck(msg,userLevel):
+                response = "We don't like those kinds of words around here, "+msg.sender
+                spam = True
+                noWarning = True
+                
+            elif self.asciiSpamCheck(msg,userLevel)>self.maxAsciiSpam:
                 response = "Don't spam characters like that, "+msg.sender+"!"
                 spam=True
 
@@ -332,22 +401,38 @@ class SpamProtection(Command):
                 response = "Please don't post links without permission "+msg.sender+"! (You need a !permit)"
                 spam=False
 
-            elif self.blockedWordCheck(msg,userLevel):
-                response = "We don't like those kinds of words around here, "+msg.sender
-                spam = True
-                noWarning = True
 
-            if msg.sender in self.offenders:
-                offender = self.offenders[self.offenders.index(msg.sender)]
-                if offender.wasWarned(self.warningPeriod):
-                    offender.timeOut()
-                    timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
-                    self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
-                    response = response + " ("+str(timeoutLength)+" second time out)"
-                    toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
-                    sock.sendall(toMsg.encode('utf-8'))
-                    
+
+
+
+            if not instaban:
+                if msg.sender in self.offenders:
+                    offender = self.offenders[self.offenders.index(msg.sender)]
+                    if offender.wasWarned(self.warningPeriod):
+                        offender.timeOut()
+                        timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
+                        self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
+                        response = response + " ("+str(timeoutLength)+" second time out)"
+                        toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
+                        sock.sendall(toMsg.encode('utf-8'))
+                        
+                    else:
+                        if noWarning:
+                            offender.timeOut()
+                            timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
+                            self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
+                            response = response + " ("+str(timeoutLength)+" second time out)"
+                            toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
+                            sock.sendall(toMsg.encode('utf-8'))
+                        else:
+                            offender.warn()
+                            response = response + " (Warning)"
+                            toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
+                            sock.sendall(toMsg.encode('utf-8'))
+
                 else:
+                    offender = SpamOffender(msg.sender)
+                    self.offenders.append(offender)
                     if noWarning:
                         offender.timeOut()
                         timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
@@ -362,20 +447,10 @@ class SpamProtection(Command):
                         sock.sendall(toMsg.encode('utf-8'))
 
             else:
-                offender = SpamOffender(msg.sender)
-                self.offenders.append(offender)
-                if noWarning:
-                    offender.timeOut()
-                    timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
-                    self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
-                    response = response + " ("+str(timeoutLength)+" second time out)"
-                    toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
-                    sock.sendall(toMsg.encode('utf-8'))
-                else:
-                    offender.warn()
-                    response = response + " (Warning)"
-                    toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
-                    sock.sendall(toMsg.encode('utf-8'))
+                #Instaban
+                self.bot.addLogMessage("Spam Protection: Instabanned "+msg.sender+" for having a blocked name prefix")
+                toMsg = "PRIVMSG "+self.bot.channel+" :/ban "+msg.sender+"\n"
+                sock.sendall(toMsg.encode('utf-8'))                
 
 
         elif msg.messageType == 'PRIVMSG' and len(msg.msg)!=0 and userLevel>=MOD:
@@ -415,6 +490,22 @@ class SpamProtection(Command):
                     response = "Removed '"+word+"' from the blocked word list"
                     self.blockedWords.remove(word)
                     self.saveBlockedWords()
+
+            elif fullmsg[0]=="!addblockedprefix" and len(fullmsg)>1:
+                word = fullmsg[1].lower()
+                if word not in self.blockedNamePrefixes:
+                    response = "Added '"+word+"' to the blocked name prefix list"
+                    self.addBlockedPrefix(word)
+                else:
+                    response = "Word '"+word+"' was already in the blocked name prefix list"
+            elif fullmsg[0]=="!delblockedprefix" and len(fullmsg)>1:
+                word = fullmsg[1].lower()
+                if word not in self.blockedNamePrefixes:
+                    response = "Word '"+word+"' was not in the blocked name prefix list"
+                else:
+                    response = "Removed '"+word+"' from the blocked name prefix list"
+                    self.delBlockedPrefix(word)
+
                     
             
         sockResponse = "PRIVMSG "+self.bot.channel+" :"+response+"\n"
