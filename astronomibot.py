@@ -226,27 +226,27 @@ class TwitchWebSocketApp(websocket.WebSocketApp):
         message = '{"type":"PING"}'
         return message
 
-    def on_open(ws):
+    def on_open(self,ws):
         curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
         print(curTime + " - PubSub Websocket opened")
         msg = ws.generateListenMessage()
         #print("Sending: "+msg)
         ws.send(msg)
 
-    def on_message(ws,message):
+    def on_message(self,ws,message):
         #print("Got message")
         jsonMsg = json.loads(message)
         #print(str(jsonMsg))
         ws.handleMessageByType(jsonMsg)
 
-    def on_error(ws,error):
+    def on_error(self,ws,error):
         curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
         print(curTime + " - PubSub Websocket encountered an error: "+str(error))
         ws.close()
 
-    def on_close(ws):
+    def on_close(self,ws,close_status,close_msg):
         curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
-        print(curtime + " - PubSub Websocket closed")
+        print(curTime + " - PubSub Websocket closed")
 
         
     def __init__(self, url, channelId, authToken, bot, header=None,
@@ -264,7 +264,7 @@ class TwitchWebSocketApp(websocket.WebSocketApp):
 
     
     #Override the standard ping behaviour since Twitch doesn't care about that, but wants an actual PING message instead    
-    def _send_ping(self,interval,event):
+    def _send_ping(self,interval,event,payload):
         while not event.wait(interval):
             if self.last_pong_tm != 0:
                 respTime = self.last_pong_tm - self.last_ping_tm
@@ -332,6 +332,7 @@ class Bot:
                 online = self.api.isStreamOnlineHelix(self.channelName)
                 if online!=self.streamOnline:
                     self.streamOnline=online
+                        
             except:
                 print("Couldn't get stream status")
                 pass #A subsequent read will update us

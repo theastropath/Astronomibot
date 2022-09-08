@@ -24,6 +24,7 @@ class GameVoteFeature(Feature):
                     continue
 
                 votesToRemove = []
+                bonusVotesToRemove = []
                 for vote in self.gameVoteCmd.voteTables[table].votes:
                     found = False
                     gamelist = self.gameVoteCmd.voteTables[table].gameList
@@ -35,11 +36,25 @@ class GameVoteFeature(Feature):
                         #print("Need to remove "+str(vote))
                         votesToRemove.append(vote)
                         votesUpdated = True
+                        
+                for vote in self.gameVoteCmd.voteTables[table].bonusvotes:
+                    found = False
+                    gamelist = self.gameVoteCmd.voteTables[table].gameList
+                    for game in gamelist:
+                        if vote[1].lower() == game[0].lower():
+                            if game[1]=="":
+                                found = True
+                    if not found:
+                        #print("Need to remove "+str(vote))
+                        bonusVotesToRemove.append(vote)
+                        votesUpdated = True
 
                 for vote in votesToRemove:
                     self.gameVoteCmd.voteTables[table].votes.remove(vote)
                     self.gameVoteCmd.voteTables[table].clearedVotes.append(vote[0])
 
+                for vote in bonusVotesToRemove:
+                    self.gameVoteCmd.voteTables[table].bonusvotes.remove(vote)
 
             if votesUpdated:
                 #print("Saving votes")

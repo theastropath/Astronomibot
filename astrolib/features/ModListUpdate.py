@@ -6,7 +6,7 @@ class ModListUpdate(Feature):
         super(ModListUpdate,self).__init__(bot,name)
         self.modUpdateFreq = 600 #In units based on the pollFreq (In astronomibot.py)
         self.modUpdate = 1
-        self.bot.subToNotices(self.handleNotice)
+        #self.bot.subToNotices(self.handleNotice)
 
     def handleNotice(self,noticeMsg):
         if noticeMsg.tags and noticeMsg.tags['msg-id']=='room_mods':
@@ -23,5 +23,9 @@ class ModListUpdate(Feature):
         self.modUpdate = self.modUpdate - 1
         if self.modUpdate == 0:
             #Send request
-            sock.sendall(b"PRIVMSG "+self.bot.channel.encode('utf-8')+b" .mods\n")
+            #sock.sendall(b"PRIVMSG "+self.bot.channel.encode('utf-8')+b" .mods\n")
+            latestMods=self.bot.api.getModsHelix(self.bot.channelId)
+            if latestMods:
+                #print(str(latestMods))
+                self.bot.modList=latestMods
             self.modUpdate = self.modUpdateFreq

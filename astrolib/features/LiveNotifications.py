@@ -5,7 +5,7 @@ import time
 import tweepy
 import json
 import threading
-
+from datetime import datetime
 from requests import Session
 
 configDir = "config"
@@ -19,6 +19,7 @@ class LiveNotifications(Feature):
 
         self.liveCheckFrequency = 10 #In units based on the pollFreq (in astronomibot.py)
         self.liveNotificationCoolOff = 60 * 60 * 2 #Cool off period is 1 hour by default
+        self.liveRecheckFrequency = 60 * 2 #How often to check again once we already know we're already live
 
         self.liveCheck = 1
 
@@ -115,17 +116,23 @@ class LiveNotifications(Feature):
         #Check to see if we need to look for hosting opportunities
         self.liveCheck = self.liveCheck - 1
         if self.liveCheck == 0:
+            curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
 
-            self.liveCheck = self.liveCheckFrequency
+            if self.live:
+                self.liveCheck = self.liveRecheckFrequency
+            else:
+                self.liveCheck = self.liveCheckFrequency
 
             if (self.bot.streamOnline and not self.live):
                 self.bot.addLogMessage("Stream has gone live")
+                self.liveCheck = self.liveNotificationCoolOff
                 self.live = True
 
                 self.notifThread = threading.Thread(target=self.sendNotifications)
                 self.notifThread.start()
 
-                self.liveCheck = self.liveNotificationCoolOff
+                
             elif (not self.bot.streamOnline and self.live):
                 self.bot.addLogMessage("Stream has gone offline")
                 self.live = False
+            #print(curTime+" - Live Notification Check Done.  Next check in "+str(self.liveCheck/2)+" seconds")

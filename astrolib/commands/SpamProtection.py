@@ -411,24 +411,29 @@ class SpamProtection(Command):
                     if offender.wasWarned(self.warningPeriod):
                         offender.timeOut()
                         timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
-                        self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
+                        banMsg="Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds"
+                        self.bot.addLogMessage(banMsg)
                         response = response + " ("+str(timeoutLength)+" second time out)"
-                        toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
-                        sock.sendall(toMsg.encode('utf-8'))
+                        #toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
+                        #sock.sendall(toMsg.encode('utf-8'))
+                        self.bot.api.banUserHelix(self.bot.channelId,msg.sender,banMsg,timeoutLength)
                         
                     else:
                         if noWarning:
                             offender.timeOut()
                             timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
-                            self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
+                            banMsg="Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds"
+                            self.bot.addLogMessage(banMsg)
                             response = response + " ("+str(timeoutLength)+" second time out)"
-                            toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
-                            sock.sendall(toMsg.encode('utf-8'))
+                            #toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
+                            #sock.sendall(toMsg.encode('utf-8'))
+                            self.bot.api.banUserHelix(self.bot.channelId,msg.sender,banMsg,timeoutLength)
                         else:
                             offender.warn()
                             response = response + " (Warning)"
-                            toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
-                            sock.sendall(toMsg.encode('utf-8'))
+                            #toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
+                            #sock.sendall(toMsg.encode('utf-8'))
+                            self.bot.api.deleteChatMsgHelix(self.bot.channelId,msg.tags['id'])
 
                 else:
                     offender = SpamOffender(msg.sender)
@@ -436,21 +441,26 @@ class SpamProtection(Command):
                     if noWarning:
                         offender.timeOut()
                         timeoutLength = offender.getNumTimeouts() * self.timeoutPeriod
-                        self.bot.addLogMessage("Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds")
+                        banMsg="Spam Protection: Timed out "+msg.sender+" for "+str(timeoutLength)+" seconds"
+                        self.bot.addLogMessage(banMsg)
                         response = response + " ("+str(timeoutLength)+" second time out)"
-                        toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
-                        sock.sendall(toMsg.encode('utf-8'))
+                        #toMsg = "PRIVMSG "+self.bot.channel+" :/timeout "+offender.getName()+" "+str(timeoutLength)+"\n"
+                        #sock.sendall(toMsg.encode('utf-8'))
+                        self.bot.api.banUserHelix(self.bot.channelId,msg.sender,banMsg,timeoutLength)
                     else:
                         offender.warn()
                         response = response + " (Warning)"
-                        toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
-                        sock.sendall(toMsg.encode('utf-8'))
+                        #toMsg = "PRIVMSG "+self.bot.channel+" :/delete "+msg.tags['id']+"\n"
+                        #sock.sendall(toMsg.encode('utf-8'))
+                        self.bot.api.deleteChatMsgHelix(self.bot.channelId,msg.tags['id'])
 
             else:
                 #Instaban
-                self.bot.addLogMessage("Spam Protection: Instabanned "+msg.sender+" for having a blocked name prefix")
-                toMsg = "PRIVMSG "+self.bot.channel+" :/ban "+msg.sender+"\n"
-                sock.sendall(toMsg.encode('utf-8'))                
+                banMsg="Spam Protection: Instabanned "+msg.sender+" for having a blocked name prefix"
+                self.bot.addLogMessage(banMsg)
+                self.bot.api.banUserHelix(self.bot.channelId,msg.sender,banMsg)
+                #toMsg = "PRIVMSG "+self.bot.channel+" :/ban "+msg.sender+"\n"
+                #sock.sendall(toMsg.encode('utf-8'))                
 
 
         elif msg.messageType == 'PRIVMSG' and len(msg.msg)!=0 and userLevel>=MOD:

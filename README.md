@@ -48,14 +48,14 @@ Navigate to:
 
 Log in as the channel owner, and you'll be sent to an localhost address that will look like this, containing your access token:
 
-    http://localhost/#access_token=<Access Token>&scope=channel_editor channel_read user:edit:broadcast bits:read channel:read:redemptions channel_subscriptions channel:manage:redemptions
+    http://localhost/#access_token=<Access Token>&scope=user:edit:broadcast bits:read channel:read:redemptions channel:manage:redemptions channel:manage:broadcast channel:read:goals channel:read:hype_train channel:read:polls channel:read:predictions channel:read:subscriptions moderation:read moderator:manage:banned_users moderator:manage:chat_messages
 
 Grab the access token from the URL and enter it as the "accesstoken" field.
 
 
 Alternately, use the token generator available at https://twitchapps.com/tokengen making sure to request the following scopes: 
 
-    channel_editor channel_read user:edit:broadcast bits:read channel:read:redemptions channel_subscriptions channel:manage:redemptions
+    user:edit:broadcast bits:read channel:read:redemptions channel:manage:redemptions channel:manage:broadcast channel:read:goals channel:read:hype_train channel:read:polls channel:read:predictions channel:read:subscriptions moderation:read moderator:manage:banned_users moderator:manage:chat_messages
 
 
 # Credentials for other Modules:

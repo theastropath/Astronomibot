@@ -326,8 +326,12 @@ class TwitchApi:
     def isStreamOnlineHelix(self,username):
         stream = self.getStreamFromNameHelix(username)
         if stream:
+            #print(str(stream))
             if "data" in stream:
                 return len(stream["data"])!=0
+            else:
+                print("isStreamOnlineHelix: No data in stream info:")
+                print(str(stream))
         return False
 
     def areStreamsOnlineHelix(self,namelist):
@@ -450,6 +454,61 @@ class TwitchApi:
         if channelId:
             return self.setTitleByIdHelix(channelId,title)
         return False
+
+    def getModsHelix(self,channelId):
+        modList=None
+        try:
+            result = self._helixRequest("https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=%s&first=100" % channelId)
+            #print(str(result))
+            if result and "data" in result:
+                data = result["data"]
+                modList=[]
+                for mod in data:
+                    modList.append(mod["user_login"])
+                
+
+        except HTTPError as e:
+            print("getModsHelix: "+str(e))
+
+        return modList
+
+    def banUserHelix(self,channelId,username,reason,duration=None):
+        
+        userId=self.getUserIdFromNameHelix(username)
+        if userId==None:
+            print("Couldn't find user "+username+", so couldn't ban")
+            return False
+        
+        data = {"user_id":userId,"reason": reason,}
+        if duration:
+            data["duration"]=duration
+        #print(str(data))
+        try:
+            result = self._helixRequest("https://api.twitch.tv/helix/moderation/bans?broadcaster_id=%s&moderator_id=%s" % (channelId,channelId), {"data":data}, 'POST')
+            #print(str(result))
+            return True
+
+        except HTTPError as e:
+            print("banUserHelix: "+str(e))
+
+        return False
+
+
+    def deleteChatMsgHelix(self,channelId,messageId=None):
+        #print(str(data))
+        url = "https://api.twitch.tv/helix/moderation/chat?broadcaster_id=%s&moderator_id=%s" % (channelId,channelId)
+        if(messageId):
+            url+="&message_id="+str(messageId)
+
+        try:
+            result = self._helixRequest(url, method='DELETE')
+            #print(str(result))
+            return True
+
+        except HTTPError as e:
+            print("deleteChatMsgHelix: "+str(e))
+
+        return False        
 
     #Redemption status can only be updated if the reward was created by your client ID, so make sure to check if you can modify it
     #before using this API (ie. check with isCustomRewardModifiable first)

@@ -4,6 +4,7 @@ import json
 import os
 from time import sleep
 import threading
+from astrolib import BROADCASTER,NOTIF_CHANNELPOINTS
 
 configDir="config"
 gamevoteCredFile = "gamevotecreds.txt"
@@ -26,6 +27,7 @@ class GameVoteTable():
             self.gameUrl = "https://sheets.googleapis.com/v4/spreadsheets/"+self.voteInfo.sheetId+"/values/"+self.fullGameRange+"?key="+self.voteInfo.apiKey
 
         self.votes=[]
+        self.bonusvotes=[]
         self.clearedVotes = []
 
         self.gameList = None
@@ -69,19 +71,24 @@ class GameVoteTable():
 
         return response
     
-    def tryVote(self,user,vote):
+    def tryVote(self,user,vote,bonus=False):
         response = user+": No game matching '"+vote+"' found"
+        found = False
         
         gameList = self.gameList
 
         if not gameList:
             response = "Please try again.  Game list has not been loaded yet"
-            return response
+            return (False,response)
 
         for game in gameList:
             if vote.lower() in game[0].lower():
                 if (game[1]==""):
-                    response = user+": Your vote has been registered for '"+game[0]+"'"
+                    if not bonus:
+                        response = user+": Your vote has been registered for '"+game[0]+"'"
+                    else:
+                        response = user+": Your bonus vote has been registered for '"+game[0]+"'"
+                        
                     found = False
                     for voter in self.votes:
                         if voter[0].lower()==user.lower():
@@ -92,7 +99,10 @@ class GameVoteTable():
                                 voter[1] = game[0]
                     else:
                         newvote = [user.lower(),game[0]]
-                        self.votes.append(newvote)
+                        if not bonus:
+                            self.votes.append(newvote)
+                        else:
+                            self.bonusvotes.append(newvote)
 
                     self.voteInfo.saveVotes()
                 else:
@@ -100,7 +110,7 @@ class GameVoteTable():
 
                 break
             
-        return response
+        return (found,response)
 
 
 class GameVoteCmd(Command):
@@ -124,6 +134,8 @@ class GameVoteCmd(Command):
         if self.apiKey != "":
             self.credsAvailable = True
             
+        self.bot.subToNotification(NOTIF_CHANNELPOINTS,self.channelPointHandler)
+            
         self.voteTables = dict()
             
         for configSection in self.bot.config:
@@ -138,6 +150,7 @@ class GameVoteCmd(Command):
                                          self.bot.config[configSection]["firstgamerow"])
 
                 self.voteTables[keyword] = newTable
+                self.createBonusVoteReward(keyword)
         
         self.voteFile = "votes.txt"
         
@@ -155,6 +168,42 @@ class GameVoteCmd(Command):
             else:
                 print(command+" is already registered to ",self.bot.getCmdOwner("command"))
             
+    def createBonusVoteReward(self,keyword):
+        title = "Bonus "+keyword+" vote"
+        promptText = "Grants you a bonus "+keyword+" vote.  Specify the game name as you would with the normal vote commands"
+        cost = 10000
+        requireText = True
+
+        rewards = self.bot.api.getCustomRewardList(self.bot.channelId)
+
+        if title not in rewards.keys():
+            if not self.bot.api.createCustomReward(self.bot.channelId,title,promptText,cost, requireText):
+                print("Couldn't create 'Bonus "+keyword+" vote' reward - does it already exist?")
+        else:
+            if not self.bot.api.isCustomRewardModifiable(self.bot.channelId,title):
+                print("ERROR: Custom Reward 'Bonus "+keyword+" vote' already exists, but isn't owned by Astronomibot - Please delete it")
+                
+    def channelPointHandler(self,data,sock):
+        #print("Got: "+str(data))
+        if data["reward"].startswith('Bonus ') and data["reward"].endswith(' vote'):
+            votetablename = data["reward"].split("Bonus ")[1].split(" vote")[0]
+            gamename = data["message"]
+            print("It's a bonus vote on the "+votetablename+" table for "+gamename)
+
+            result = self.voteTables[votetablename].tryVote(data["username"].lower(),gamename,True)
+            baseResponse = result[1]
+            success = result[0]
+
+            if success:
+                self.bot.api.fulfillChannelPointRedemption(data["redemptionid"],data["rewardid"],data["channelid"])
+            else:
+                self.bot.api.cancelChannelPointRedemption(data["redemptionid"],data["rewardid"],data["channelid"])
+
+            response = "PRIVMSG "+self.bot.channel+" :"+baseResponse+"\n"
+            sock.sendall(response.encode('utf-8'))
+            return baseResponse
+        
+        
 
     def getDescription(self,full=False):
         listurl = 'https://docs.google.com/spreadsheets/d/'+self.sheetId
@@ -183,6 +232,15 @@ class GameVoteCmd(Command):
             gamevotes.append((table.capitalize()+" Name","Number of Votes"))
             gamevotecounts = []
             for gamevote in self.voteTables[table].votes:
+                found = False
+                for count in gamevotecounts:
+                    if count[0] == gamevote[1]:
+                        count[1] = count[1]+1
+                        found = True
+                if not found:
+                    gamevotecounts.append([gamevote[1],1])
+                    
+            for gamevote in self.voteTables[table].bonusvotes:
                 found = False
                 for count in gamevotecounts:
                     if count[0] == gamevote[1]:
@@ -302,10 +360,20 @@ class GameVoteCmd(Command):
                     if len(voteLine)>=3:
                         newVote = [voteLine[1]," ".join(voteLine[2:])]
 
-                        if voteLine[0] in self.voteTables:
-                            self.voteTables[voteLine[0]].votes.append(newVote)
+                        bonus=False
+                        tablename = voteLine[0]
+                        if tablename.startswith("bonus"):
+                            bonus=True
+                            tablename = tablename.lstrip("bonus")
+                        
+                        if tablename in self.voteTables:
+                            if not bonus:
+                                self.voteTables[tablename].votes.append(newVote)
+                            else:
+                                self.voteTables[tablename].bonusvotes.append(newVote)
+
                         else:
-                            print("Unknown vote keyword: "+voteLine[0])
+                            print("Unknown vote keyword: "+tablename)
                                 
                     elif len(voteLine)>=2:
                         newVote = voteLine[1]
@@ -327,6 +395,8 @@ class GameVoteCmd(Command):
             for table in self.voteTables:
                 for vote in self.voteTables[table].votes:
                     f.write(self.voteTables[table].keyword+" "+vote[0]+" "+vote[1]+"\r\n")
+                for vote in self.voteTables[table].bonusvotes:
+                    f.write("bonus"+self.voteTables[table].keyword+" "+vote[0]+" "+vote[1]+"\r\n")                
                 for vote in self.voteTables[table].clearedVotes:
                     f.write(self.voteTables[table].keyword+"clear "+vote+"\r\n")
 
@@ -415,7 +485,8 @@ class GameVoteCmd(Command):
                 response = self.voteTables[keyword].getCurVote(msg.sender)
             else:
                 vote = " ".join(fullmsg[1:])
-                response = self.voteTables[keyword].tryVote(msg.sender,vote)
+                result = self.voteTables[keyword].tryVote(msg.sender,vote)
+                response = result[1]
         else:
             #Remind user that vote has been cleared
             clearedRando = False
