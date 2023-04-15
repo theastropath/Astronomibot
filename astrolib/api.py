@@ -234,6 +234,42 @@ class TwitchApi:
 
         return None
 
+
+    def getChattersHelix(self, channelName):
+        chatters = []
+        broadcasterId = self.getUserIdFromNameHelix(channelName)
+        page=None
+        keepSearching = True
+
+        if (broadcasterId == None):
+            print("getChattersHelix: Couldn't get broadcaster ID")
+            return None
+        
+        try:
+            while keepSearching:
+                url = "https://api.twitch.tv/helix/chat/chatters?broadcaster_id="+broadcasterId+"&moderator_id="+broadcasterId
+                if (page!=None):
+                    url+="&after="+page
+                    
+                chatterlist = self._helixRequest(url)
+                #print(chatterlist)
+                if "data" not in chatterlist:
+                    print("getChattersHelix: No chatter data in response")
+                    return chatters
+
+                for chatter in chatterlist["data"]:
+                    chatters.append(chatter)
+
+                if "pagination" in chatterlist and "cursor" in chatterlist["pagination"]:
+                    page = chatterlist["pagination"]["cursor"]
+                else:
+                    keepSearching = False
+            
+        except HTTPError as e:
+            print("getChattersHelix: "+str(e))
+
+        return chatters
+        
     def getChatters(self, channelName):
         try:
             chatlist = self._pubRequest('http://tmi.twitch.tv/group/user/%s/chatters' % channelName.lower())
@@ -253,16 +289,21 @@ class TwitchApi:
 
     def getAllChatters(self, channelName):
         allchatters = None
-        chatterMap = self.getChatters(channelName)
+        #chatterMap = self.getChatters(channelName)
+        chatterMap = self.getChattersHelix(channelName)
 
         if chatterMap:
             allchatters = []
-            for chatters in chatterMap.values():
-                allchatters.extend(chatters)
+            for chatter in chatterMap:
+                if (chatter["user_login"]==chatter["user_name"].lower()):
+                    allchatters.append(chatter["user_name"])
+                else: #safety against having to deal with non-english characters...
+                    allchatters.append(chatter["user_login"])
 
         return allchatters
 
     def getModerators(self, channelName):
+        print("getModerators: DEPRECATED")
         chatterMap = self.getChatters(channelName)
         return chatterMap["moderators"] if chatterMap else []
 

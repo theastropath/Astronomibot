@@ -180,6 +180,8 @@ body {{ background: #{background} }}
             self.ftp.set_pasv(True)
             self.ftp.cwd(self.ftpDir)
             print("FTP Connection Opened at "+datetime.now().ctime())
+        except socket.timeout as e:
+            pass #I don't really care about a timeout, just reconnect plz
         except Exception as e:
             print("Couldn't connect to FTP ("+str(type(e))+") at "+datetime.now().ctime())
 
@@ -203,14 +205,14 @@ body {{ background: #{background} }}
                 pass #I don't really care about a timeout, just reconnect plz
             except ftplib.all_errors as e:
                 print("Encountered an error "+str(type(e))+" trying to deal with the FTP connection at "+datetime.now().ctime()+": "+str(e))
-                print_exc()                
+                #print_exc()                
                 if self.ftp is not None:
                     try:
                         self.ftp.quit()
                         print("FTP Connection gracefully closed at "+datetime.now().ctime())
                     except ftplib.all_errors as e:
                         print ("Encountered an error when trying to quit FTP connection: "+str(e))
-                        print_exc()
+                        #print_exc()
                         self.ftp.close()
     def uploadTask(self):
         print("Upload Task Started")
