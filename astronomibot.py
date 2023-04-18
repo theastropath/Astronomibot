@@ -213,6 +213,9 @@ class TwitchWebSocketApp(websocket.WebSocketApp):
                 if "error" in msg:
                     if msg["error"]!="":
                         print("Got error response: "+msg["error"])
+            elif msg["type"]=="RECONNECT":
+                curTime = datetime.now().ctime()+" "+time.tzname[time.localtime().tm_isdst]
+                print(curTime + " - PubSub Websocket sending reconnect request")
             else:
                 print("Got something else:")
                 print(str(msg))
@@ -520,13 +523,13 @@ class Bot:
             
 
         
-        if userName==self.channel[1:]:
+        if userName.lower()==self.channel[1:]:
             #print(userName+" identified as broadcaster!")
             return BROADCASTER
-        elif userName in self.modList:
+        elif userName.lower() in self.modList:
             #print(userName+" identified as a mod!")
             return MOD
-        elif userName in self.regulars:
+        elif userName.lower() in self.regulars:
             return REGULAR
         else:
             #print(userName+" identified as a scrub!")
